@@ -1,0 +1,4 @@
+crawler/data/raw/*
+crawler/data/processed/*
+crawler/data/chunks/*
+crawler/data/chroma/*
