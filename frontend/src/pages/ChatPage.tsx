@@ -1,12 +1,10 @@
 
-// src/pages/ChatPage.tsx
 import { useEffect, useRef, useState } from 'react';
 import {
   ActionIcon,
   Avatar,
   Badge,
   Box,
-  Button,
   Card,
   Divider,
   Group,
@@ -24,17 +22,10 @@ import {
   IconMicrophone,
   IconUser,
 } from '@tabler/icons-react';
+import type { ChatMessage } from '../features/chat/types/chat.type';
 
-type ChatMessage = {
-  id: string;
-  role: "ai" | "user";
-  content: string;
-  time: string;
-};
 
-const quickQuestions = ['🌡️ 열이 나요', '🥣 이유식', '😴 수면 루틴', '📏 성장 발달'];
 
-const extraActions = ['📷 사진', '📋 증상 체크', '📚 가이드', '📅 성장 기록'];
 const initialMessages: ChatMessage[] = [
   {
     id: "initial-ai-1",
@@ -344,29 +335,7 @@ const ChatPage=()=> {
             <MessageBubble key={message.id} message={message} />
           ))}
 
-          <Group gap={7} pl={38} style={{ flexWrap: 'wrap' }}>
-            {quickQuestions.map((question) => (
-              <Button
-                key={question}
-                variant="light"
-                radius="xl"
-                size="xs"
-                color="pink"
-                onClick={() => sendMessage(question)}
-                styles={{
-                  root: {
-                    backgroundColor: '#fff',
-                    border: '1.5px solid #FFAAB3',
-                    color: '#E84D5C',
-                    boxShadow: '0 1px 6px rgba(255, 107, 122, 0.1)',
-                    fontWeight: 500,
-                  },
-                }}
-              >
-                {question}
-              </Button>
-            ))}
-          </Group>
+     
 
           {messages.slice(2, 4).map((message) => (
             <MessageBubble key={message.id} message={message} />
@@ -442,29 +411,7 @@ const ChatPage=()=> {
           flexShrink: 0,
         }}
       >
-        <Group gap={6} mb={10} wrap="nowrap" style={{ overflowX: 'auto' }}>
-          {extraActions.map((action) => (
-            <Button
-              key={action}
-              variant="light"
-              radius="xl"
-              size="xs"
-              color="pink"
-              styles={{
-                root: {
-                  flexShrink: 0,
-                  backgroundColor: '#FFF0F2',
-                  border: '1.5px solid #FFE4E7',
-                  color: '#7A4A52',
-                  fontWeight: 500,
-                },
-              }}
-            >
-              {action}
-            </Button>
-          ))}
-        </Group>
-
+ 
         <Group align="flex-end" gap={8} wrap="nowrap">
           <Textarea
             value={inputValue}
