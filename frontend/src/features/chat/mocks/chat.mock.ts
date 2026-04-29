@@ -1,4 +1,4 @@
-import type { ChatMessage } from '@/features/chat/types/chat.type';
+import type { ChatMessage } from "@/features/chat/types/chat.type";
 
 export const initialMessages: ChatMessage[] = [
   {

@@ -1,8 +1,7 @@
-import ChatAvatar from '@/features/chat/components/chatAvatar';
-import { Box, Group, Paper } from '@mantine/core';
+import ChatAvatar from "@/features/chat/components/chatAvatar";
+import { Box, Group, Paper } from "@mantine/core";
 
-
-const TypingIndicator=() => {
+const TypingIndicator = () => {
   return (
     <Group align="flex-end" gap={8}>
       <ChatAvatar />
@@ -35,5 +34,5 @@ const TypingIndicator=() => {
       </Paper>
     </Group>
   );
-}
-export default TypingIndicator
+};
+export default TypingIndicator;

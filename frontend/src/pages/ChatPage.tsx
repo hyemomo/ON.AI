@@ -1,23 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  Box,
-  Divider,
-  ScrollArea,
-  Stack,
-} from '@mantine/core';
+import { useEffect, useRef, useState } from "react";
+import { Box, Divider, ScrollArea, Stack } from "@mantine/core";
 
-import type { ChatMessage } from '@/features/chat/types/chat.type';
-import { aiReplies, initialMessages } from '@/features/chat/mocks/chat.mock';
-import { createMessageId } from '@/features/chat/utils/createMessageId';
-import { getCurrentTime } from '@/features/chat/utils/formatChatTime';
-import MessageBubble from '@/features/chat/components/MessageBubble';
-import ChatHeader from '@/features/chat/components/ChatHeader';
-import TypingIndicator from '@/features/chat/components/TypingIndicator';
-import ChatInput from '@/features/chat/components/ChatInput';
+import type { ChatMessage } from "@/features/chat/types/chat.type";
+import { aiReplies, initialMessages } from "@/features/chat/mocks/chat.mock";
+import { createMessageId } from "@/features/chat/utils/createMessageId";
+import { getCurrentTime } from "@/features/chat/utils/formatChatTime";
+import MessageBubble from "@/features/chat/components/MessageBubble";
+import ChatHeader from "@/features/chat/components/ChatHeader";
+import TypingIndicator from "@/features/chat/components/TypingIndicator";
+import ChatInput from "@/features/chat/components/ChatInput";
 
-const ChatPage=()=> {
+const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -28,7 +23,7 @@ const ChatPage=()=> {
 
     viewport.scrollTo({
       top: viewport.scrollHeight,
-      behavior: 'smooth',
+      behavior: "smooth",
     });
   };
 
@@ -44,11 +39,12 @@ const ChatPage=()=> {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
+    setInputValue("");
     setIsTyping(true);
 
     window.setTimeout(() => {
-      const randomReply = aiReplies[Math.floor(Math.random() * aiReplies.length)];
+      const randomReply =
+        aiReplies[Math.floor(Math.random() * aiReplies.length)];
 
       const aiMessage: ChatMessage = {
         id: createMessageId() + 1,
@@ -115,7 +111,7 @@ const ChatPage=()=> {
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
-          
+
           {isTyping && <TypingIndicator />}
         </Stack>
       </ScrollArea>
@@ -127,5 +123,5 @@ const ChatPage=()=> {
       />
     </Box>
   );
-}
+};
 export default ChatPage;
