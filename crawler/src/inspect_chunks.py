@@ -8,7 +8,7 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent / "parent_policy"))
 
 from config import CHROMA_DIR, COLLECTION_NAME, EMBEDDING_MODEL
 import chromadb

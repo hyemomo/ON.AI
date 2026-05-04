@@ -3,10 +3,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 from chunker import POLICY_METADATA
-
-BASE = Path(__file__).resolve().parent.parent
-JSON_PATH = BASE / "data" / "raw_json" / "document_parse_result.json"
-OUT_PATH  = BASE / "data" / "policies.json"
+from config import JSON_PATH, OUT_PATH
 
 SKIP = {"header", "footer", "figure"}
 TOC_MAX_PAGE = 7
