@@ -1,5 +1,5 @@
-pymupdf
+pdfplumber
 chromadb
-openai
+sentence-transformers
 python-dotenv
 tqdm
