@@ -59,6 +59,8 @@ def build_divider_pages(els):
     return result
 
 def main():
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
     with open(JSON_PATH, encoding="utf-8") as f:
         els = json.load(f)["elements"]
 
