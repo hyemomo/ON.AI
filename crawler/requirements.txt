@@ -1,5 +1,14 @@
 pdfplumber
 chromadb
+<<<<<<< HEAD
 sentence-transformers
 python-dotenv
 tqdm
+=======
+python-dotenv
+tqdm
+fastapi 
+uvicorn
+black
+isort
+>>>>>>> origin/feature/child-guide-crawler
