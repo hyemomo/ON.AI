@@ -17,3 +17,7 @@ CHILD_GUIDE_PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 PDF_PATH = RAW_DIR / "child_action1.pdf"
 
 OUTPUT_PATH = CHILD_GUIDE_PROCESSED_DIR / "child_action1_cases.json"
+
+CHROMA_DIR      = str(DATA_DIR / "chroma")
+COLLECTION_NAME = "child_guide"
+EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
