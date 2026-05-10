@@ -26,6 +26,10 @@ build/
 .vscode/
 .idea/
 
+# environment variables
+*.env
+.env
+
 # data debug / local vector DB
 crawler/data/debug/*
 crawler/data/raw/*

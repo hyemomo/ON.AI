@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Box, Divider, ScrollArea, Stack } from "@mantine/core";
 
 import type { ChatMessage } from "@/features/chat/types/chat.type";
-import { aiReplies, initialMessages } from "@/features/chat/mocks/chat.mock";
+import { initialMessages } from "@/features/chat/mocks/chat.mock";
+import { sendChatMessage } from "@/features/chat/api/chatApi";
 import { createMessageId } from "@/features/chat/utils/createMessageId";
 import { getCurrentTime } from "@/features/chat/utils/formatChatTime";
 import MessageBubble from "@/features/chat/components/MessageBubble";
@@ -42,20 +43,28 @@ const ChatPage = () => {
     setInputValue("");
     setIsTyping(true);
 
-    window.setTimeout(() => {
-      const randomReply =
-        aiReplies[Math.floor(Math.random() * aiReplies.length)];
-
-      const aiMessage: ChatMessage = {
-        id: createMessageId() + 1,
-        role: "ai",
-        content: randomReply,
-        time: getCurrentTime(),
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1200);
+    sendChatMessage(trimmedText)
+      .then(({ reply }) => {
+        const aiMessage: ChatMessage = {
+          id: createMessageId(),
+          role: "ai",
+          content: reply,
+          time: getCurrentTime(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      })
+      .catch(() => {
+        const errorMessage: ChatMessage = {
+          id: createMessageId(),
+          role: "ai",
+          content: "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+          time: getCurrentTime(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      })
+      .finally(() => {
+        setIsTyping(false);
+      });
   };
 
   const handleSubmit = () => {
