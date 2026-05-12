@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from database import get_db
-from schemas.post_schema import PostCreate
+from schemas.post_schema import PostCreate, PostUpdateRequest
 from services import post_service
 
 router = APIRouter()
@@ -27,3 +27,31 @@ def get_post(postnum: int, db: Session = Depends(get_db)):
 def create_post(post: PostCreate, db: Session = Depends(get_db)):
     result = post_service.create_post(post, db)
     return result
+
+# 게시글 수정
+@router.put("/{postnum}")
+def update_post_api(
+        postnum: int,
+        request: PostUpdateRequest,
+        db: Session = Depends(get_db)
+):
+    return post_service.update_post(
+        db=db,
+        postnum=postnum,
+        p_title=request.p_title,
+        p_content=request.p_content,
+        usernum=request.usernum
+    )
+
+# 게시글 삭제
+@router.delete("/{postnum}")
+def delete_post_api(
+    postnum: int,
+    usernum: int,
+    db: Session = Depends(get_db)
+):
+    return post_service.delete_post(
+        db=db,
+        postnum=postnum,
+        usernum=usernum
+    )

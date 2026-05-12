@@ -20,3 +20,8 @@ class CommentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# 댓글 수정 응답 데이터 타입
+class CommentUpdateRequest(BaseModel):
+    c_content: str
+    usernum: int

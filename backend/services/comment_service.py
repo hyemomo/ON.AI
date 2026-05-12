@@ -62,3 +62,36 @@ def create_comment(comment_data: CommentCreate, db: Session):
         "message": "댓글 작성 완료",
         "commentnum": new_comment.commentnum
     }
+
+# 댓글 수정
+def update_comment(db: Session, commentnum: int, c_content: str, usernum: int):
+    comment = db.query(Comment).filter(Comment.commentnum == commentnum).first()
+
+    if comment is None:
+        raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다.")
+    
+    if comment.c_user != usernum:
+        raise HTTPException(status_code=403, detail="댓글 수정 권한이 없습니다.")
+    
+
+    comment.c_content = c_content
+
+    db.commit()
+    db.refresh(comment)
+
+    return comment
+
+# 댓글 삭제
+def delete_comment(db: Session, commentnum: int, usernum: int):
+    comment = db.query(Comment).filter(Comment.commentnum == commentnum).first()
+
+    if comment is None:
+        raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다.")
+    
+    if comment.c_user != usernum:
+        raise HTTPException(status_code=403, detail="댓글 수정 권한이 없습니다.")
+
+    db.delete(comment)
+    db.commit()
+
+    return {"message": "댓글이 삭제되었습니다."}

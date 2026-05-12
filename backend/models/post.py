@@ -15,4 +15,8 @@ class Post(Base):
     p_created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     user = relationship("User", back_populates="posts")
-    comments = relationship("Comment", back_populates="post")
+    comments = relationship(
+        "Comment", 
+        back_populates="post",
+        passive_deletes=True
+    )

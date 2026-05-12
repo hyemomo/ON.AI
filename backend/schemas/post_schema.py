@@ -20,3 +20,9 @@ class PostResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# 게시글 수정 응답 데이터 타입
+class PostUpdateRequest(BaseModel):
+    p_title: str
+    p_content: str
+    usernum: int

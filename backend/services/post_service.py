@@ -74,3 +74,36 @@ def create_post(post_data: PostCreate, db: Session):
         "message": "게시글 작성 완료",
         "postnum": new_post.postnum
     }
+
+# 게시글 수정
+def update_post(db: Session, postnum: int, p_title: str, p_content: str, usernum: int):
+    post = db.query(Post).filter(Post.postnum == postnum).first()
+
+    if post is None:
+        raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
+    
+    if post.p_user != usernum:
+        raise HTTPException(status_code=403, detail="게시글 수정 권한이 없습니다.")
+    
+    post.p_title = p_title
+    post.p_content = p_content
+
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+# 게시글 삭제
+def delete_post(db: Session, postnum: int, usernum: int):
+    post = db.query(Post).filter(Post.postnum == postnum).first()
+
+    if post is None:
+        raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
+    
+    if post.p_user != usernum:
+        raise HTTPException(status_code=403, detail="게시글 삭제 권한이 없습니다.")
+    
+    db.delete(post)
+    db.commit()
+
+    return {"message": "게시글이 삭제되었습니다."}
