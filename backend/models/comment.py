@@ -12,9 +12,10 @@ class Comment(Base):
     c_content = Column(String(255), nullable=False)
     c_user = Column(Integer, ForeignKey("USERS.usernum"), nullable=False)
     c_post = Column(
-        Integer, 
-        ForeignKey("POSTS.postnum", ondelete="CASECADE"), 
-        nullable=False)
+        Integer,
+        ForeignKey("POSTS.postnum", ondelete="CASCADE"),
+        nullable=False
+    )
     c_created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     user = relationship("User", back_populates="comments")

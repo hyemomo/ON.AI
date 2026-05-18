@@ -2,7 +2,3 @@ pymupdf
 chromadb
 python-dotenv
 tqdm
-fastapi 
-uvicorn
-black
-isort
