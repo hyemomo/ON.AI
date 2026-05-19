@@ -4,8 +4,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import OUT_PATH, CHROMA_DIR, COLLECTION_NAME, EMBEDDING_MODEL
-from chroma_store import get_collection, save_chunks
+from config import OUT_PATH, CHROMA_DIR, COLLECTION_NAME
+from chroma_store import get_collection, save_chunks, EMBEDDING_MODEL
 
 
 def main():
@@ -24,6 +24,7 @@ def main():
                 "income_criteria":  item["income_criteria"],
                 "support_type":     item["support_type"],
                 "application_place": item["application_place"],
+                "detail_url":       item.get("site_url", ""),
             },
         })
 

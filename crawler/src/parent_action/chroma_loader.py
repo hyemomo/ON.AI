@@ -4,8 +4,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import OUTPUT_PATH, CHROMA_DIR, COLLECTION_NAME, EMBEDDING_MODEL
-from chroma_store import get_collection, save_chunks
+from config import OUTPUT_PATH, CHROMA_DIR, COLLECTION_NAME
+from chroma_store import get_collection, save_chunks, EMBEDDING_MODEL
 
 
 def main():

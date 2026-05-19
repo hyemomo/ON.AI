@@ -16,4 +16,3 @@ OUTPUT_PATH = PARENT_ACTION_DIR / "parent_action_cases.json"
 
 CHROMA_DIR      = str(DATA_DIR / "chroma")
 COLLECTION_NAME = "parent_action"
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"

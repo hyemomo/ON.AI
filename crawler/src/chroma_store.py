@@ -1,8 +1,10 @@
 import chromadb
 from chromadb.utils import embedding_functions
 
+EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
-def get_collection(db_path: str, collection_name: str, model_name: str):
+
+def get_collection(db_path: str, collection_name: str, model_name: str = EMBEDDING_MODEL):
     ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model_name)
     client = chromadb.PersistentClient(path=db_path)
     try:

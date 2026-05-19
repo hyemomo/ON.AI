@@ -14,13 +14,11 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent / "parent_policy"))
-sys.path.insert(0, str(Path(__file__).parent / "child_guide"))
+sys.path.insert(0, str(Path(__file__).parent))
 
 import chromadb
 from chromadb.utils import embedding_functions
-
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+from chroma_store import EMBEDDING_MODEL
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CHROMA_DIR = str(BASE_DIR / "data" / "chroma")

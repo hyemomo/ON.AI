@@ -20,4 +20,3 @@ OUTPUT_PATH = CHILD_GUIDE_PROCESSED_DIR / "child_action1_cases.json"
 
 CHROMA_DIR      = str(DATA_DIR / "chroma")
 COLLECTION_NAME = "child_guide"
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"

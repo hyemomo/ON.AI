@@ -1,15 +1,11 @@
 import json, sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from chroma_store import get_collection, save_chunks
-
-BASE_DIR        = Path(__file__).resolve().parents[2]
-JSON_PATH       = BASE_DIR / "data" / "processed" / "first_aid" / "first_aid_chunks.json"
-CHROMA_DIR      = str(BASE_DIR / "data" / "chroma")
-COLLECTION_NAME = "first_aid"
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+from config import JSON_PATH, CHROMA_DIR, COLLECTION_NAME
+from chroma_store import get_collection, save_chunks, EMBEDDING_MODEL
 
 
 def main():
