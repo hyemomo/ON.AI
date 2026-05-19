@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Divider, ScrollArea, Stack } from "@mantine/core";
+import { Box, Button, Divider, Group, ScrollArea, Stack, Text } from "@mantine/core";
 
-import type { ChatMessage } from "@/features/chat/types/chat.type";
+import type { ChatMessage, ChatMode } from "@/features/chat/types/chat.type";
 import { initialMessages } from "@/features/chat/mocks/chat.mock";
 import { sendChatMessage } from "@/features/chat/api/chatApi";
 import { createMessageId } from "@/features/chat/utils/createMessageId";
@@ -11,10 +11,19 @@ import ChatHeader from "@/features/chat/components/ChatHeader";
 import TypingIndicator from "@/features/chat/components/TypingIndicator";
 import ChatInput from "@/features/chat/components/ChatInput";
 
+const MODE_OPTIONS: { mode: ChatMode; label: string; icon: string; color: string }[] = [
+  { mode: "policy",     label: "복지정책",  icon: "📋", color: "#4A90E2" },
+  { mode: "parenting",  label: "육아방법",  icon: "👶", color: "#5CB85C" },
+  { mode: "first_aid",  label: "응급처치",  icon: "🚑", color: "#E84D5C" },
+  { mode: "counseling", label: "상담",      icon: "💬", color: "#9B59B6" },
+];
+
 const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [mode, setMode] = useState<ChatMode | null>(null);
+  const [modeStartIndex, setModeStartIndex] = useState(0);
 
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -43,15 +52,18 @@ const ChatPage = () => {
     setInputValue("");
     setIsTyping(true);
 
-    sendChatMessage(trimmedText)
-      .then(({ reply }) => {
+    sendChatMessage(trimmedText, messages.slice(modeStartIndex), mode ?? "")
+      .then(({ reply, category, is_fallback, sources }) => {
         const aiMessage: ChatMessage = {
           id: createMessageId(),
           role: "ai",
           content: reply,
           time: getCurrentTime(),
+          category,
+          is_fallback,
+          sources,
         };
-        setMessages((prev) => [...prev, aiMessage]);
+        setMessages((cur) => [...cur, aiMessage]);
       })
       .catch(() => {
         const errorMessage: ChatMessage = {
@@ -120,6 +132,65 @@ const ChatPage = () => {
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
+
+          {/* 카테고리 선택 버튼 — 아직 선택 전이고 타이핑 중이 아닐 때만 표시 */}
+          {!mode && !isTyping && (
+            <Box pl={44}>
+              <Text size="xs" c="#C4909A" mb={8}>
+                어떤 도움이 필요하신가요?
+              </Text>
+              <Group gap={8} wrap="wrap">
+                {MODE_OPTIONS.map((opt) => (
+                  <Button
+                    key={opt.mode}
+                    size="xs"
+                    variant="outline"
+                    radius="xl"
+                    onClick={() => {
+                      setMode(opt.mode);
+                      setModeStartIndex(messages.length);
+                    }}
+                    styles={{
+                      root: {
+                        borderColor: opt.color,
+                        color: opt.color,
+                        "&:hover": { backgroundColor: `${opt.color}15` },
+                      },
+                    }}
+                  >
+                    {opt.icon} {opt.label}
+                  </Button>
+                ))}
+              </Group>
+            </Box>
+          )}
+
+          {/* 선택된 카테고리 표시 + 변경 버튼 */}
+          {mode && !isTyping && (
+            <Box pl={44}>
+              <Group gap={6} align="center">
+                <Text size="xs" c="#C4909A">
+                  {MODE_OPTIONS.find((o) => o.mode === mode)?.icon}{" "}
+                  <strong>{MODE_OPTIONS.find((o) => o.mode === mode)?.label}</strong> 모드로 답변드릴게요
+                </Text>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="gray"
+                  radius="xl"
+                  p={4}
+                  h="auto"
+                  onClick={() => {
+                    setMode(null);
+                    setModeStartIndex(messages.length);
+                  }}
+                  style={{ fontSize: 11 }}
+                >
+                  새 대화
+                </Button>
+              </Group>
+            </Box>
+          )}
 
           {isTyping && <TypingIndicator />}
         </Stack>
