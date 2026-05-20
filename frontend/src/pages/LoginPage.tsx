@@ -51,10 +51,12 @@ export default function LoginPage() {
         throw new Error("로그인 실패");
       }
 
-      const data = await response.json();
-      console.log("로그인 성공:", data);
+    const data = await response.json();
 
-      alert("로그인되었습니다.");
+    localStorage.setItem("access_token", data.access_token);
+
+    console.log("로그인 성공:", data);
+    alert("로그인되었습니다.");
     } catch (error) {
       console.error(error);
       alert("아이디 또는 비밀번호를 확인해주세요.");
