@@ -4,8 +4,10 @@ import CommunityPage from "@/pages/CommunityPage";
 import PostDetailPage from "@/pages/PostDetailPage";
 import PostWritePage from '@/pages/PostWritePage';
 import Test from '@/pages/Test';
+import SignupPage from '@/pages/SignupPage';
 
 export const router = createBrowserRouter([
+  {path: "/signup", element:<SignupPage/>},
   {
     path: "/chat",
     element: <ChatPage />,
