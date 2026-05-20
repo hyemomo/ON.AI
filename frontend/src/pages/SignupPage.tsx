@@ -14,6 +14,7 @@ import {
 } from "@mantine/core";
 
 import { colors } from "@/tokens/color";
+import { REGION_OPTIONS } from '@/features/auth/constants/region';
 
 type SignupForm = {
   id: string;
@@ -40,8 +41,38 @@ export default function SignupPage() {
     region: "",
   });
 
+const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
+const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+const handleProvinceChange = (province: string | null) => {
+  setSelectedProvince(province);
+  setSelectedDistrict(null);
 
+  if (!province) {
+    handleChange("region", "");
+    return;
+  }
+
+  const districts = REGION_OPTIONS[province];
+
+  // 세종시처럼 하위 지역이 없는 경우
+  if (districts.length === 0) {
+    handleChange("region", province);
+  } else {
+    handleChange("region", "");
+  }
+};
+
+const handleDistrictChange = (district: string | null) => {
+  setSelectedDistrict(district);
+
+  if (!selectedProvince || !district) {
+    handleChange("region", "");
+    return;
+  }
+
+  handleChange("region", `${selectedProvince} ${district}`);
+};
   const handleChange = (name: keyof SignupForm, value: string) => {
     setForm((prev) => ({
       ...prev,
@@ -222,15 +253,41 @@ export default function SignupPage() {
                   styles={inputStyles}
                 />
 
-                <TextInput
-                  label="지역"
-                  placeholder="예: 강원도 춘천시"
-                  value={form.region}
-                  onChange={(e) => handleChange("region", e.target.value)}
+                <Select
+                  label="시/도"
+                  placeholder="시/도를 선택하세요"
+                  data={Object.keys(REGION_OPTIONS)}
+                  value={selectedProvince}
+                  onChange={handleProvinceChange}
                   required
                   styles={inputStyles}
                 />
 
+                <Select
+                  label="시/군/구"
+                  placeholder={
+                    selectedProvince
+                      ? REGION_OPTIONS[selectedProvince].length === 0
+                        ? "하위 지역 선택 없음"
+                        : "시/군/구를 선택하세요"
+                      : "먼저 시/도를 선택하세요"
+                  }
+                  data={
+                    selectedProvince ? REGION_OPTIONS[selectedProvince] : []
+                  }
+                  value={selectedDistrict}
+                  onChange={handleDistrictChange}
+                  disabled={
+                    !selectedProvince ||
+                    REGION_OPTIONS[selectedProvince].length === 0
+                  }
+                  required={
+                    !!selectedProvince &&
+                    REGION_OPTIONS[selectedProvince].length > 0
+                  }
+                  styles={inputStyles}
+                />
+                
                 <Group justify="center" mt="md">
                   <Button
                     type="submit"
