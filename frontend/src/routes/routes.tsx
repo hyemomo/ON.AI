@@ -5,9 +5,11 @@ import PostDetailPage from "@/pages/PostDetailPage";
 import PostWritePage from '@/pages/PostWritePage';
 import Test from '@/pages/Test';
 import SignupPage from '@/pages/SignupPage';
+import LoginPage from '@/pages/LoginPage';
 
 export const router = createBrowserRouter([
   {path: "/signup", element:<SignupPage/>},
+  {path: "/login", element:<LoginPage/>},
   {
     path: "/chat",
     element: <ChatPage />,
