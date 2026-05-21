@@ -1,15 +1,32 @@
-import type { Post } from '@/features/community/post-detail/types/types';
-import { Avatar, Badge, Box, Button, Card, Divider, Group, Stack, Text } from '@mantine/core';
+import {
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Divider,
+  Group,
+  Image,
+  Stack,
+  Text,
+} from "@mantine/core";
 import React, { useState } from "react";
-import { coralScale,  text, border, gradient } from "@/tokens/color";
-import { IconFlame, IconHeart, IconHeartFilled, IconMessageCircle, IconShare3 } from '@tabler/icons-react';
+import { text, border } from "@/tokens/color";
+import {
+  IconHeart,
+  IconHeartFilled,
+  IconMessageCircle,
+  IconShare3,
+} from "@tabler/icons-react";
+import type { Post } from '@/features/community/post-detail/types/types';
 
 const PostContentCard = ({ post }: { post: Post }) => {
-  const [liked, setLiked] = useState(post.liked ?? false);
-  const [likeCount, setLikeCount] = useState(post.likes);
+  const [liked, setLiked] = useState(post.is_liked);
+  const [likeCount, setLikeCount] = useState(post.like_count);
 
   const toggleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
+
     setLiked((prev) => !prev);
     setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
   };
@@ -17,34 +34,12 @@ const PostContentCard = ({ post }: { post: Post }) => {
   return (
     <Card
       p="lg"
+      withBorder
       style={{
         cursor: "pointer",
-        borderColor: post.isHot ? coralScale[2] : border.default,
+        borderColor: border.default,
       }}
     >
-      {/* HOT 배지 스트립 */}
-      {post.isHot && (
-        <Card.Section
-          style={{
-            background: gradient.primary,
-            padding: "4px 16px",
-            marginBottom: 16,
-          }}
-        >
-          <Group gap={6}>
-            <IconFlame size={12} color="white" />
-            <Text
-              size="xs"
-              fw={700}
-              c="white"
-              style={{ letterSpacing: "0.06em" }}
-            >
-              HOT
-            </Text>
-          </Group>
-        </Card.Section>
-      )}
-
       {/* 헤더 */}
       <Group justify="space-between" mb="sm">
         <Group gap="sm">
@@ -53,26 +48,22 @@ const PostContentCard = ({ post }: { post: Post }) => {
             size={38}
             style={{ border: `1.5px solid ${border.default}` }}
           >
-            {post.emoji}
+            {post.nickname?.[0] ?? "?"}
           </Avatar>
+
           <Stack gap={2}>
-            <Group gap={6}>
-              <Text size="sm" fw={600} c={text.primary}>
-                {post.author}
-              </Text>
-              {post.authorLevel && (
-                <Badge size="xs" color="coral" variant="light">
-                  {post.authorLevel}
-                </Badge>
-              )}
-            </Group>
+            <Text size="sm" fw={600} c={text.primary}>
+              {post.nickname}
+            </Text>
+
             <Text size="xs" c={text.muted}>
-              {post.childAge} · {post.timeAgo}
+              {post.p_region_tag} · {post.p_created_at}
             </Text>
           </Stack>
         </Group>
-        <Badge size="sm" color={post.categoryColor} variant="light">
-          {post.category}
+
+        <Badge size="sm" color="coral" variant="light">
+          {post.p_category_tag}
         </Badge>
       </Group>
 
@@ -84,8 +75,9 @@ const PostContentCard = ({ post }: { post: Post }) => {
         c={text.primary}
         style={{ lineHeight: 1.45, letterSpacing: "-0.15px" }}
       >
-        {post.title}
+        {post.p_title}
       </Text>
+
       <Text
         size="sm"
         fw={300}
@@ -94,28 +86,30 @@ const PostContentCard = ({ post }: { post: Post }) => {
         lineClamp={2}
         style={{ lineHeight: 1.7 }}
       >
-        {post.body}
+        {post.p_content}
       </Text>
 
       {/* 이미지 */}
-      {post.images && (
+      {post.image_urls.length > 0 && (
         <Group gap="xs" mb="sm">
-          {post.images.map((img, i) => (
+          {post.image_urls.map((imageUrl, index) => (
             <Box
-              key={i}
+              key={index}
               style={{
                 width: 80,
                 height: 80,
                 borderRadius: 12,
-                background: coralScale[1],
+                overflow: "hidden",
                 border: `1px solid ${border.default}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 28,
               }}
             >
-              {img}
+              <Image
+                src={imageUrl}
+                alt={`게시글 이미지 ${index + 1}`}
+                width={80}
+                height={80}
+                fit="cover"
+              />
             </Box>
           ))}
         </Group>
@@ -137,6 +131,7 @@ const PostContentCard = ({ post }: { post: Post }) => {
         >
           {likeCount}
         </Button>
+
         <Button
           variant="subtle"
           size="xs"
@@ -144,8 +139,9 @@ const PostContentCard = ({ post }: { post: Post }) => {
           leftSection={<IconMessageCircle size={14} />}
           style={{ fontWeight: 500, color: text.muted }}
         >
-          {post.comments}
+          {post.comment_count}
         </Button>
+
         <Button
           variant="subtle"
           size="xs"
@@ -155,12 +151,15 @@ const PostContentCard = ({ post }: { post: Post }) => {
         >
           공유
         </Button>
+
         <Box style={{ flex: 1 }} />
+
         <Text size="xs" c={text.muted}>
-          조회 {post.views.toLocaleString()}
+          작성자 #{post.p_user}
         </Text>
       </Group>
     </Card>
   );
 };
+
 export default PostContentCard;
