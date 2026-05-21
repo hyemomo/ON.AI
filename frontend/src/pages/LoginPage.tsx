@@ -10,6 +10,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { useNavigate } from "react-router-dom";
 
 import { colors } from "@/tokens/color";
 
@@ -25,6 +26,7 @@ export default function LoginPage() {
   });
 
   const [loading, setLoading] = useState(false);
+const navigate = useNavigate();
 
   const handleChange = (name: keyof LoginForm, value: string) => {
     setForm((prev) => ({
@@ -52,11 +54,11 @@ export default function LoginPage() {
       }
 
     const data = await response.json();
-
     localStorage.setItem("access_token", data.access_token);
 
     console.log("로그인 성공:", data);
     alert("로그인되었습니다.");
+    navigate("/");
     } catch (error) {
       console.error(error);
       alert("아이디 또는 비밀번호를 확인해주세요.");
