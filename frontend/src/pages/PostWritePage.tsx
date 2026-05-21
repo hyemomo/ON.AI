@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AppShell,
   Container,
@@ -12,20 +13,21 @@ import {
   Card,
   Divider,
   Box,
+  Select,
   Paper,
   Breadcrumbs,
   Anchor,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
 import {
   IconArrowLeft,
   IconPhoto,
   IconX,
   IconSend,
   IconAlertCircle,
-  IconHash,
 } from "@tabler/icons-react";
-import {
+import MDEditor from "@uiw/react-md-editor";
+
+import colors, {
   coralScale,
   surface,
   text,
@@ -35,81 +37,166 @@ import {
 } from "@/tokens/color";
 import {
   BODY_MAX,
-  CATEGORIES,
   TITLE_MAX,
 } from "@/features/community/post-write/constants/constants";
-import MDEditor from "@uiw/react-md-editor";
+import { REGION_OPTIONS } from "@/features/auth/constants/region";
+
 interface ImageItem {
   id: string;
   emoji: string;
   name: string;
 }
+
 interface PostWritePageProps {
   onBack?: () => void;
-  onSubmit?: (data: { title: string; body: string; category: string }) => void;
 }
 
-export default function PostWritePage({
-  onBack,
-  onSubmit,
-}: PostWritePageProps) {
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
+const ALLOWED_CATEGORIES = [
+  "육아친구",
+  "육아정보",
+  "교육",
+  "맛집",
+  "고민상담",
+  "동네소식",
+  "취미/여가",
+  "패션/미용",
+];
+
+export default function PostWritePage({ onBack }: PostWritePageProps) {
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    p_title: "",
+    p_content: "",
+    p_region_tag: "",
+    p_category_tag: "",
+  });
+
   const [images, setImages] = useState<ImageItem[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
-    useDisclosure(false);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
 
-  // 유효성
-  const isTitleValid = title.trim().length >= 0;
-  const isBodyValid = body.trim().length >= 0;
-  const isCategoryValid = !!category;
-  const canSubmit = isTitleValid && isBodyValid && isCategoryValid;
+  const handleChange = (name: keyof typeof form, value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-  // 이미지 추가 (데모용 이모지)
+  const handleProvinceChange = (province: string | null) => {
+    setSelectedProvince(province);
+    setSelectedDistrict(null);
+
+    if (!province) {
+      handleChange("p_region_tag", "");
+      return;
+    }
+
+    const districts = REGION_OPTIONS[province];
+
+    if (districts.length === 0) {
+      handleChange("p_region_tag", province);
+    } else {
+      handleChange("p_region_tag", "");
+    }
+  };
+
+  const handleDistrictChange = (district: string | null) => {
+    setSelectedDistrict(district);
+
+    if (!selectedProvince || !district) {
+      handleChange("p_region_tag", "");
+      return;
+    }
+
+    handleChange("p_region_tag", `${selectedProvince} ${district}`);
+  };
+
+  const isTitleValid = form.p_title.trim().length >= 1;
+  const isBodyValid = form.p_content.trim().length >= 1;
+  const isRegionValid = !!form.p_region_tag;
+  const isCategoryValid = !!form.p_category_tag;
+
+  const canSubmit =
+    isTitleValid && isBodyValid && isRegionValid && isCategoryValid;
+
   const DEMO_IMAGES: ImageItem[] = [
     { id: "1", emoji: "📸", name: "사진_001.jpg" },
     { id: "2", emoji: "🖼️", name: "사진_002.jpg" },
     { id: "3", emoji: "📷", name: "사진_003.jpg" },
   ];
+
   const handleAddImage = () => {
     if (images.length >= 5) return;
     const next = DEMO_IMAGES[images.length % DEMO_IMAGES.length];
     setImages((prev) => [...prev, { ...next, id: String(Date.now()) }]);
   };
+
   const handleRemoveImage = (id: string) => {
     setImages((prev) => prev.filter((img) => img.id !== id));
   };
 
-  // 태그 추가
-  const handleAddTag = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && tagInput.trim() && tags.length < 5) {
-      setTags((prev) => [...prev, tagInput.trim()]);
-      setTagInput("");
-    }
-  };
-  const handleRemoveTag = (tag: string) => {
-    setTags((prev) => prev.filter((t) => t !== tag));
-  };
+ const handleSubmit = async () => {
+   console.log("전송할 form:", form);
 
-  // 제출
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    setSubmitLoading(true);
-    setTimeout(() => {
-      setSubmitLoading(false);
-      onSubmit?.({ title, body, category: category! });
-    }, 1200);
+   if (!canSubmit) return;
+
+   try {
+     setSubmitLoading(true);
+
+     const token = localStorage.getItem("access_token");
+
+     if (!token) {
+       alert("로그인이 필요합니다.");
+       navigate("/login");
+       return;
+     }
+
+     const formData = new FormData();
+
+     formData.append("p_title", form.p_title);
+     formData.append("p_content", form.p_content);
+     formData.append("p_region_tag", form.p_region_tag);
+     formData.append("p_category_tag", form.p_category_tag);
+
+     const response = await fetch("http://127.0.0.1:8000/community/posts/", {
+       method: "POST",
+       headers: {
+         Authorization: `Bearer ${token}`,
+       },
+       body: formData,
+     });
+     if (!response.ok) {
+       const errorData = await response.json();
+       console.error("게시글 작성 실패:", errorData);
+       throw new Error("게시글 작성 실패");
+     }
+
+     const data = await response.json();
+     console.log("게시글 작성 성공:", data);
+
+     alert("게시글이 등록되었습니다.");
+     navigate("/community");
+   } catch (error) {
+     console.error(error);
+     alert("게시글 등록 중 오류가 발생했습니다.");
+   } finally {
+     setSubmitLoading(false);
+   }
+ };
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+
+    navigate("/community");
   };
 
   return (
     <Box style={{ minHeight: "100vh", background: surface.bg }}>
-      {/* ──
-      
-      
-      AppShell Header ── */}
       <AppShell header={{ height: 62 }} padding={0}>
         <AppShell.Header
           style={{
@@ -120,13 +207,12 @@ export default function PostWritePage({
         >
           <Container size="xl" h="100%">
             <Group h="100%" justify="space-between">
-              {/* 왼쪽: 뒤로가기 + 브레드크럼 */}
               <Group gap="sm">
                 <ActionIcon
                   variant="subtle"
                   size={36}
                   radius="xl"
-                  onClick={onBack}
+                  onClick={handleBack}
                   style={{
                     border: `1.5px solid ${border.default}`,
                     background: surface.subtle,
@@ -134,6 +220,7 @@ export default function PostWritePage({
                 >
                   <IconArrowLeft size={16} color={coralScale[6]} />
                 </ActionIcon>
+
                 <Breadcrumbs
                   separator="›"
                   separatorMargin={6}
@@ -143,6 +230,7 @@ export default function PostWritePage({
                     size="sm"
                     c={text.muted}
                     style={{ textDecoration: "none" }}
+                    onClick={() => navigate("/community")}
                   >
                     커뮤니티
                   </Anchor>
@@ -151,8 +239,6 @@ export default function PostWritePage({
                   </Text>
                 </Breadcrumbs>
               </Group>
-
-              {/* 오른쪽: 미리보기 + 등록 */}
 
               <Button
                 size="sm"
@@ -176,53 +262,95 @@ export default function PostWritePage({
         <AppShell.Main>
           <Container size="md" py="xl">
             <Stack gap="lg">
-              {/* ── 카테고리 선택 ── */}
               <Card p="xl">
-                <Text size="sm" fw={700} c={text.primary} mb="sm">
-                  카테고리{" "}
-                  <Text component="span" c={coralScale[5]}>
-                    *
-                  </Text>
-                </Text>
-                <Group gap="xs" wrap="wrap">
-                  {CATEGORIES.map((cat) => (
-                    <Button
-                      key={cat.value}
-                      size="xs"
-                      radius="xl"
-                      variant={category === cat.value ? "filled" : "outline"}
-                      onClick={() => setCategory(cat.value)}
-                      style={{
-                        background:
-                          category === cat.value
-                            ? gradient.primary
-                            : surface.white,
-                        borderColor:
-                          category === cat.value
-                            ? "transparent"
-                            : border.default,
-                        color:
-                          category === cat.value ? "white" : text.secondary,
-                        boxShadow: category === cat.value ? shadow.btn : "none",
-                        fontWeight: 500,
-                        transition: "all 160ms ease-out",
-                      }}
-                    >
-                      {cat.label}
-                    </Button>
-                  ))}
+                <Group justify="space-between" mb="xs">
+                  <Stack gap={2}>
+                    <Text size="sm" fw={700} c={text.primary}>
+                      지역
+                    </Text>
+                    <Text size="xs" c={text.muted}>
+                      게시글을 보여줄 지역을 선택해주세요
+                    </Text>
+                  </Stack>
+
+                  {form.p_region_tag && (
+                    <Badge size="sm" color="coral" variant="light">
+                      {form.p_region_tag}
+                    </Badge>
+                  )}
                 </Group>
-                {!isCategoryValid && category === null && (
-                  <Text size="xs" c={text.muted} mt={8}>
-                    카테고리를 선택해주세요
-                  </Text>
-                )}
+
+                <Stack gap="sm">
+                  <Select
+                    placeholder="시/도를 선택하세요"
+                    data={Object.keys(REGION_OPTIONS)}
+                    value={selectedProvince}
+                    onChange={handleProvinceChange}
+                    required
+                    radius="md"
+                    styles={inputStyles}
+                  />
+
+                  <Select
+                    placeholder={
+                      selectedProvince
+                        ? REGION_OPTIONS[selectedProvince].length === 0
+                          ? "하위 지역 선택 없음"
+                          : "시/군/구를 선택하세요"
+                        : "먼저 시/도를 선택하세요"
+                    }
+                    data={
+                      selectedProvince ? REGION_OPTIONS[selectedProvince] : []
+                    }
+                    value={selectedDistrict}
+                    onChange={handleDistrictChange}
+                    disabled={
+                      !selectedProvince ||
+                      REGION_OPTIONS[selectedProvince].length === 0
+                    }
+                    required={
+                      !!selectedProvince &&
+                      REGION_OPTIONS[selectedProvince].length > 0
+                    }
+                    radius="md"
+                    styles={inputStyles}
+                  />
+                </Stack>
               </Card>
 
-              {/* ── 제목 + 본문 ── */}
+              <Card p="xl">
+                <Group justify="space-between" mb="xs">
+                  <Stack gap={2}>
+                    <Text size="sm" fw={700} c={text.primary}>
+                      게시글 카테고리
+                    </Text>
+                    <Text size="xs" c={text.muted}>
+                      게시글 성격에 맞는 카테고리를 선택해주세요
+                    </Text>
+                  </Stack>
+
+                  {form.p_category_tag && (
+                    <Badge size="sm" color="coral" variant="light">
+                      {form.p_category_tag}
+                    </Badge>
+                  )}
+                </Group>
+
+                <Select
+                  placeholder="카테고리를 선택하세요"
+                  data={ALLOWED_CATEGORIES}
+                  value={form.p_category_tag}
+                  onChange={(value) =>
+                    handleChange("p_category_tag", value || "")
+                  }
+                  required
+                  radius="md"
+                  styles={inputStyles}
+                />
+              </Card>
+
               <Card p="xl">
                 <Stack gap="md">
-                  {/* 제목 */}
                   <Box>
                     <Group justify="space-between" mb={6}>
                       <Text size="sm" fw={700} c={text.primary}>
@@ -234,46 +362,33 @@ export default function PostWritePage({
                       <Text
                         size="xs"
                         c={
-                          title.length > TITLE_MAX * 0.8
+                          form.p_title.length > TITLE_MAX * 0.8
                             ? coralScale[5]
                             : text.muted
                         }
                       >
-                        {title.length} / {TITLE_MAX}
+                        {form.p_title.length} / {TITLE_MAX}
                       </Text>
                     </Group>
+
                     <TextInput
                       placeholder="제목을 입력해주세요"
-                      value={title}
+                      value={form.p_title}
                       onChange={(e) =>
-                        setTitle(e.currentTarget.value.slice(0, TITLE_MAX))
+                        handleChange(
+                          "p_title",
+                          e.currentTarget.value.slice(0, TITLE_MAX),
+                        )
                       }
                       size="md"
                       radius="md"
-                      error={
-                        title.length > 0 && !isTitleValid
-                          ? "제목은 최소 5자 이상 입력해주세요"
-                          : undefined
-                      }
-                      styles={{
-                        input: {
-                          fontSize: 16,
-                          fontWeight: 500,
-                          color: text.primary,
-                          borderColor:
-                            !isTitleValid && title.length > 0
-                              ? coralScale[5]
-                              : border.default,
-                        },
-                      }}
+                      styles={inputStyles}
                     />
                   </Box>
 
                   <Divider color={border.default} />
 
-                  {/* 에디터 툴바 */}
                   <Box>
-                    {/* 본문 Textarea */}
                     <Group justify="space-between" mb={6}>
                       <Text size="sm" fw={700} c={text.primary}>
                         내용{" "}
@@ -284,20 +399,24 @@ export default function PostWritePage({
                       <Text
                         size="xs"
                         c={
-                          body.length > BODY_MAX * 0.9
+                          form.p_content.length > BODY_MAX * 0.9
                             ? coralScale[5]
                             : text.muted
                         }
                       >
-                        {body.length} / {BODY_MAX}
+                        {form.p_content.length} / {BODY_MAX}
                       </Text>
                     </Group>
+
                     <Box data-color-mode="light">
                       <MDEditor
-                        value={body}
-                        onChange={(value) => {
-                          setBody((value ?? "").slice(0, BODY_MAX));
-                        }}
+                        value={form.p_content}
+                        onChange={(value) =>
+                          handleChange(
+                            "p_content",
+                            (value ?? "").slice(0, BODY_MAX),
+                          )
+                        }
                         height={320}
                         preview="edit"
                         visibleDragbar={false}
@@ -313,16 +432,10 @@ export default function PostWritePage({
                         }}
                       />
                     </Box>
-                    {body.length > 0 && !isBodyValid && (
-                      <Text size="xs" c={coralScale[5]} mt={4}>
-                        내용은 최소 10자 이상 입력해주세요
-                      </Text>
-                    )}
                   </Box>
                 </Stack>
               </Card>
 
-              {/* ── 이미지 첨부 ── */}
               <Card p="xl">
                 <Group justify="space-between" mb="md">
                   <Stack gap={2}>
@@ -339,7 +452,6 @@ export default function PostWritePage({
                 </Group>
 
                 <Group gap="sm" wrap="wrap">
-                  {/* 추가 버튼 */}
                   {images.length < 5 && (
                     <Box
                       onClick={handleAddImage}
@@ -355,15 +467,6 @@ export default function PostWritePage({
                         justifyContent: "center",
                         gap: 6,
                         cursor: "pointer",
-                        transition: "all 160ms ease-out",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = coralScale[4];
-                        e.currentTarget.style.background = coralScale[0];
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = border.strong;
-                        e.currentTarget.style.background = surface.subtle;
                       }}
                     >
                       <IconPhoto size={22} color={coralScale[4]} />
@@ -373,7 +476,6 @@ export default function PostWritePage({
                     </Box>
                   )}
 
-                  {/* 이미지 프리뷰 */}
                   {images.map((img) => (
                     <Box
                       key={img.id}
@@ -388,7 +490,6 @@ export default function PostWritePage({
                         justifyContent: "center",
                         fontSize: 36,
                         position: "relative",
-                        overflow: "visible",
                       }}
                     >
                       {img.emoji}
@@ -413,128 +514,6 @@ export default function PostWritePage({
                 </Group>
               </Card>
 
-              {/* ── 태그 ── */}
-              <Card p="xl">
-                <Group justify="space-between" mb="xs">
-                  <Stack gap={2}>
-                    <Text size="sm" fw={700} c={text.primary}>
-                      태그
-                    </Text>
-                    <Text size="xs" c={text.muted}>
-                      Enter로 추가, 최대 5개
-                    </Text>
-                  </Stack>
-                  <Badge size="sm" color="coral" variant="light">
-                    {tags.length} / 5
-                  </Badge>
-                </Group>
-
-                <Paper
-                  p="sm"
-                  radius="md"
-                  style={{
-                    border: `1.5px solid ${border.default}`,
-                    background: surface.white,
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 8,
-                    alignItems: "center",
-                    minHeight: 48,
-                  }}
-                >
-                  {/* 태그 pills */}
-                  {tags.map((tag) => (
-                    <Box
-                      key={tag}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        background: coralScale[0],
-                        border: `1.5px solid ${border.strong}`,
-                        borderRadius: 100,
-                        padding: "4px 10px",
-                      }}
-                    >
-                      <IconHash size={10} color={coralScale[5]} />
-                      <Text size="xs" fw={500} c={coralScale[6]}>
-                        {tag}
-                      </Text>
-                      <ActionIcon
-                        size={14}
-                        variant="transparent"
-                        onClick={() => handleRemoveTag(tag)}
-                      >
-                        <IconX size={10} color={coralScale[5]} />
-                      </ActionIcon>
-                    </Box>
-                  ))}
-
-                  {/* 입력 */}
-                  {tags.length < 5 && (
-                    <input
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.currentTarget.value)}
-                      onKeyDown={handleAddTag}
-                      placeholder={
-                        tags.length === 0
-                          ? "# 태그를 입력하세요"
-                          : "# 태그 추가"
-                      }
-                      style={{
-                        border: "none",
-                        outline: "none",
-                        background: "transparent",
-                        fontFamily: "inherit",
-                        fontSize: 13.5,
-                        color: text.primary,
-                        flex: 1,
-                        minWidth: 100,
-                      }}
-                    />
-                  )}
-                </Paper>
-
-                {/* 추천 태그 */}
-                <Group gap={6} mt="sm">
-                  <Text size="xs" c={text.muted}>
-                    추천:
-                  </Text>
-                  {["14개월", "발열", "해열제", "ON.AI", "초보맘"].map((t) => (
-                    <Box
-                      key={t}
-                      onClick={() => {
-                        if (tags.length < 5 && !tags.includes(t))
-                          setTags((prev) => [...prev, t]);
-                      }}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 4,
-                        fontSize: 12,
-                        color: text.muted,
-                        border: `1px solid ${border.default}`,
-                        borderRadius: 100,
-                        padding: "2px 10px",
-                        cursor: "pointer",
-                        background: surface.white,
-                        transition: "all 160ms ease-out",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = coralScale[3];
-                        e.currentTarget.style.color = coralScale[6];
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = border.default;
-                        e.currentTarget.style.color = text.muted;
-                      }}
-                    >
-                      # {t}
-                    </Box>
-                  ))}
-                </Group>
-              </Card>
-              {/* ── 최종 등록 버튼 ── */}
               <Stack gap="xs">
                 {!canSubmit && (
                   <Paper
@@ -550,14 +529,17 @@ export default function PostWritePage({
                   >
                     <IconAlertCircle size={15} color={coralScale[5]} />
                     <Text size="xs" c={coralScale[6]}>
-                      {!isCategoryValid
-                        ? "카테고리를 선택해주세요"
-                        : !isTitleValid
-                          ? "제목을 5자 이상 입력해주세요"
-                          : "내용을 10자 이상 입력해주세요"}
+                      {!isRegionValid
+                        ? "지역을 선택해주세요"
+                        : !isCategoryValid
+                          ? "카테고리를 선택해주세요"
+                          : !isTitleValid
+                            ? "제목을 입력해주세요"
+                            : "내용을 입력해주세요"}
                     </Text>
                   </Paper>
                 )}
+
                 <Button
                   fullWidth
                   size="md"
@@ -566,16 +548,10 @@ export default function PostWritePage({
                   disabled={!canSubmit}
                   loading={submitLoading}
                   onClick={handleSubmit}
-                  style={{
-                    background: canSubmit ? gradient.primary : undefined,
-                    border: "none",
-                    boxShadow: canSubmit ? shadow.btn : "none",
-                    height: 48,
-                    fontSize: 15,
-                  }}
                 >
                   게시글 등록하기
                 </Button>
+                
                 <Text size="xs" c={text.muted} ta="center">
                   커뮤니티 이용 규칙을 준수하는 게시글을 작성해주세요
                 </Text>
@@ -587,3 +563,23 @@ export default function PostWritePage({
     </Box>
   );
 }
+
+const inputStyles = {
+  input: {
+    minHeight: 46,
+    backgroundColor: surface.white,
+    border: `1.5px solid ${border.default}`,
+    color: text.primary,
+  },
+  label: {
+    color: colors.text.primary,
+    fontWeight: 700,
+    marginBottom: 6,
+  },
+  dropdown: {
+    borderColor: border.default,
+  },
+  option: {
+    color: text.primary,
+  },
+};
