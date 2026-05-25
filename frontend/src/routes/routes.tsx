@@ -7,6 +7,10 @@ import Test from "@/pages/Test";
 import SignupPage from "@/pages/SignupPage";
 import LoginPage from "@/pages/LoginPage";
 import HomePage from "@/pages/HomePage";
+import ParentInfoStep from '@/features/onboarding/components/ParentInfoStep';
+import ChildInfoStep from '@/features/onboarding/components/ChildInfoStep';
+import InterestRegionStep from '@/features/onboarding/components/InterestRegionStep';
+import InterestStep from '@/features/onboarding/components/InterestStep';
 
 export const router = createBrowserRouter([
   {
@@ -40,5 +44,21 @@ export const router = createBrowserRouter([
   {
     path: "/test",
     element: <Test />,
+  },
+  {
+    path: "/onboarding/parent",
+    element: <ParentInfoStep/>,
+  },
+  {
+    path: "/onboarding/children",
+    element: <ChildInfoStep/>,
+  },
+  {
+    path: "/onboarding/regions",
+    element: <InterestRegionStep />,
+  },
+  {
+    path: "/onboarding/interests",
+    element: <InterestStep/>,
   },
 ]);
