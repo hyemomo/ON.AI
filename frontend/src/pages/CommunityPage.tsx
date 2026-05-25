@@ -23,14 +23,12 @@ import {
   text,
 } from "@/tokens/color";
 import PostContentCard from "@/features/community/post-detail/components/PostContentCard";
-import {
-  ALLOWED_CATEGORIES,
-} from "@/features/community/constants";
+import { ALLOWED_CATEGORIES } from "@/features/community/constants";
 import type {
   CommunityPostsResponse,
   Post,
 } from "@/features/community/post-detail/types/types";
-import { REGION_OPTIONS } from '@/features/auth/constants/region';
+import { REGION_OPTIONS } from "@/features/auth/constants/region";
 
 const theme = createTheme({
   colors: { coral: coralScale },

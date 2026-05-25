@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   AppShell,
   Container,
@@ -6,7 +7,6 @@ import {
   Stack,
   Text,
   Badge,
-  Avatar,
   Button,
   ActionIcon,
   Textarea,
@@ -15,10 +15,7 @@ import {
   Box,
   Paper,
 } from "@mantine/core";
-import {
-  IconArrowLeft,
-  IconSend,
-} from "@tabler/icons-react";
+import { IconArrowLeft, IconSend } from "@tabler/icons-react";
 import {
   coralScale,
   surface,
@@ -31,27 +28,66 @@ import type {
   Comment,
   Post,
 } from "@/features/community/post-detail/types/types";
-import {
-  COMMENTS,
-  POST,
-} from "@/features/community/post-detail/mocks/mockData";
 import PostContentCard from "@/features/community/post-detail/components/PostContentCard";
 import CommentItem from "@/features/community/post-detail/components/CommentItem";
 
-interface PostDetailPageProps {
-  post?: Post;
-  onBack?: () => void;
+interface PostDetailResponse {
+  post: Post;
 }
 
-export default function PostDetailPage({
-  post = POST,
-  onBack,
-}: PostDetailPageProps) {
+export default function PostDetailPage() {
+  const navigate = useNavigate();
+  const params = useParams();
+
+  const postnum = params.postnum as string;
+
+  const [loading, setLoading] = useState(true);
+  const [post, setPost] = useState<Post | null>(null);
+
   const [commentText, setCommentText] = useState("");
-  const [comments, setComments] = useState<Comment[]>(COMMENTS);
+  const [comments, setComments] = useState<Comment[]>([]);
+
+  useEffect(() => {
+    const fetchPostDetail = async () => {
+      try {
+        setLoading(true);
+
+        const token = localStorage.getItem("access_token");
+
+        const response = await fetch(
+          `http://127.0.0.1:8000/community/posts/${postnum}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data: PostDetailResponse = await response.json();
+
+        if (!response.ok) {
+          throw new Error("게시글 상세 조회 실패");
+        }
+
+        setPost(data.post);
+      } catch (error) {
+        console.error(error);
+        alert("게시글을 불러오지 못했습니다.");
+        navigate("/community");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (postnum) {
+      fetchPostDetail();
+    }
+  }, [postnum, navigate]);
 
   const handleSubmitComment = () => {
     if (!commentText.trim()) return;
+
     const newComment: Comment = {
       id: Date.now(),
       author: "김지연",
@@ -63,9 +99,38 @@ export default function PostDetailPage({
       likes: 0,
       isAuthor: true,
     };
+
     setComments((prev) => [newComment, ...prev]);
     setCommentText("");
   };
+
+  if (loading) {
+    return (
+      <Box style={{ minHeight: "100vh", background: surface.bg }}>
+        <Container size="md" py="xl">
+          <Card p="xl">
+            <Text ta="center" c={text.muted}>
+              게시글을 불러오는 중입니다...
+            </Text>
+          </Card>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (!post) {
+    return (
+      <Box style={{ minHeight: "100vh", background: surface.bg }}>
+        <Container size="md" py="xl">
+          <Card p="xl">
+            <Text ta="center" c={text.muted}>
+              게시글을 찾을 수 없습니다.
+            </Text>
+          </Card>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
     <Box style={{ minHeight: "100vh", background: surface.bg }}>
@@ -84,7 +149,7 @@ export default function PostDetailPage({
                 color="coral"
                 size={36}
                 radius="xl"
-                onClick={onBack}
+onClick={() => navigate(-1)}
                 style={{
                   border: `1.5px solid ${border.default}`,
                   background: surface.subtle,
@@ -100,20 +165,21 @@ export default function PostDetailPage({
           <Container size="md">
             <Stack gap="lg">
               <PostContentCard post={post} />
+
               <Card p="xl">
                 <Group justify="space-between" mb="lg">
                   <Text fw={700} size="md" c={text.primary}>
-                    댓글
+                    댓글{" "}
                     <Text component="span" c={coralScale[5]}>
                       {comments.length}
                     </Text>
                   </Text>
+
                   <Badge color="coral" variant="light" size="sm">
                     최신순
                   </Badge>
                 </Group>
 
-                {/* 댓글 입력 */}
                 <Paper
                   p="md"
                   radius="lg"
@@ -124,16 +190,8 @@ export default function PostDetailPage({
                   }}
                 >
                   <Group align="flex-start" gap="sm">
-                    <Avatar
-                      size={36}
-                      radius="xl"
-                      style={{
-                        border: `1.5px solid ${border.default}`,
-                        flexShrink: 0,
-                      }}
-                    >
-                    김
-                    </Avatar>
+                   
+
                     <Stack gap="sm" style={{ flex: 1 }}>
                       <Textarea
                         id="comment-input"
@@ -153,10 +211,12 @@ export default function PostDetailPage({
                           },
                         }}
                       />
+
                       <Group justify="space-between" align="center">
                         <Text size="xs" c={text.muted}>
                           {commentText.length} / 500자
                         </Text>
+
                         <Button
                           size="sm"
                           color="coral"
@@ -181,7 +241,6 @@ export default function PostDetailPage({
 
                 <Divider color={border.default} mb="lg" />
 
-                {/* 댓글 목록 */}
                 <Stack gap="xl">
                   {comments.map((comment, idx) => (
                     <Box key={comment.id}>
@@ -193,73 +252,6 @@ export default function PostDetailPage({
                   ))}
                 </Stack>
               </Card>
-
-              {/* ── 관련 게시글 ── */}
-              {/* <Card p="xl">
-                <Text fw={700} size="md" c={text.primary} mb="md">
-                  비슷한 게시글
-                </Text>
-                <Stack gap="sm">
-                  {[
-                    {
-                      title: "15개월 아이 열 자주 나는데 정상인가요?",
-                      comments: 34,
-                      category: "🌡️ 건강",
-                    },
-                    {
-                      title: "해열제 종류별 차이점 정리해봤어요",
-                      comments: 58,
-                      category: "🌡️ 건강",
-                    },
-                    {
-                      title: "ON.AI 처음 써봤는데 진짜 신기해요!",
-                      comments: 21,
-                      category: "💬 육아 고민",
-                    },
-                  ].map((item, i) => (
-                    <Paper
-                      key={i}
-                      p="sm"
-                      radius="md"
-                      style={{
-                        border: `1.5px solid ${border.default}`,
-                        cursor: "pointer",
-                        transition: "all 160ms ease-out",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = border.strong;
-                        e.currentTarget.style.background = coralScale[0];
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = border.default;
-                        e.currentTarget.style.background = surface.white;
-                      }}
-                    >
-                      <Group justify="space-between">
-                        <Group gap="sm">
-                          <Badge size="xs" color="green" variant="light">
-                            {item.category}
-                          </Badge>
-                          <Text
-                            size="sm"
-                            fw={500}
-                            c={text.primary}
-                            lineClamp={1}
-                          >
-                            {item.title}
-                          </Text>
-                        </Group>
-                        <Group gap={4} style={{ flexShrink: 0 }}>
-                          <IconMessageCircle size={12} color={text.muted} />
-                          <Text size="xs" c={text.muted}>
-                            {item.comments}
-                          </Text>
-                        </Group>
-                      </Group>
-                    </Paper>
-                  ))}
-                </Stack>
-              </Card> */}
             </Stack>
           </Container>
         </AppShell.Main>

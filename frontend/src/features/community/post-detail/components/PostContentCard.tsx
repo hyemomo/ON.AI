@@ -19,11 +19,12 @@ import {
   IconShare3,
 } from "@tabler/icons-react";
 import type { Post } from '@/features/community/post-detail/types/types';
+import { useNavigate } from 'react-router-dom';
 
 const PostContentCard = ({ post }: { post: Post }) => {
   const [liked, setLiked] = useState(post.is_liked);
   const [likeCount, setLikeCount] = useState(post.like_count);
-
+const navigate = useNavigate()
   const toggleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -31,13 +32,17 @@ const PostContentCard = ({ post }: { post: Post }) => {
     setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
   };
 
+ const handleClickCard = () => {
+   navigate(`/community/posts/${post.postnum}`);
+ };
   return (
     <Card
+      onClick={handleClickCard}
       p="lg"
       withBorder
       style={{
         cursor: "pointer",
-        borderColor: border.default,
+        borderColor: border.default
       }}
     >
       {/* 헤더 */}

@@ -30,7 +30,7 @@ export const router = createBrowserRouter([
     element: <CommunityPage />,
   },
   {
-    path: "/community/1",
+    path: "/community/posts/:postnum",
     element: <PostDetailPage />,
   },
   {
