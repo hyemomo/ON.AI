@@ -43,16 +43,46 @@ export default function PostDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [post, setPost] = useState<Post | null>(null);
-
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
+
+  const token = localStorage.getItem("access_token");
+
+useEffect(() => {
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/community/comments/post/${postnum}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const data = await response.json();
+      console.log("댓글 조회 응답:", data);
+
+      if (!response.ok) {
+        throw new Error("댓글 조회 실패");
+      }
+
+      setComments(data.comments ?? data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  if (postnum) {
+    fetchComments();
+  }
+}, [postnum, token]);
 
   useEffect(() => {
     const fetchPostDetail = async () => {
       try {
         setLoading(true);
-
-        const token = localStorage.getItem("access_token");
 
         const response = await fetch(
           `http://127.0.0.1:8000/community/posts/${postnum}`,
@@ -61,7 +91,7 @@ export default function PostDetailPage() {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         const data: PostDetailResponse = await response.json();
@@ -83,26 +113,52 @@ export default function PostDetailPage() {
     if (postnum) {
       fetchPostDetail();
     }
-  }, [postnum, navigate]);
+  }, [postnum, navigate, token]);
 
-  const handleSubmitComment = () => {
-    if (!commentText.trim()) return;
 
-    const newComment: Comment = {
-      id: Date.now(),
-      author: "김지연",
-      authorLevel: "레벨 5",
-      emoji: "🌸",
-      childAge: "14개월",
-      timeAgo: "방금",
-      body: commentText,
-      likes: 0,
-      isAuthor: true,
-    };
+const handleSubmitComment = async () => {
+  if (!commentText.trim()) return;
 
-    setComments((prev) => [newComment, ...prev]);
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/community/comments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        c_content: commentText,
+        c_post: Number(postnum),
+      }),
+    });
+
+    const data = await response.json();
+    console.log("댓글 등록 응답:", data);
+
+    if (!response.ok) {
+      throw new Error("댓글 등록 실패");
+    }
+
     setCommentText("");
-  };
+
+    const commentResponse = await fetch(
+      `http://127.0.0.1:8000/community/comments/post/${postnum}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const commentData = await commentResponse.json();
+
+    setComments(commentData.comments ?? commentData);
+  } catch (error) {
+    console.error(error);
+    alert("댓글 등록에 실패했습니다.");
+  }
+};
 
   if (loading) {
     return (
@@ -149,7 +205,7 @@ export default function PostDetailPage() {
                 color="coral"
                 size={36}
                 radius="xl"
-onClick={() => navigate(-1)}
+                onClick={() => navigate(-1)}
                 style={{
                   border: `1.5px solid ${border.default}`,
                   background: surface.subtle,
@@ -190,8 +246,6 @@ onClick={() => navigate(-1)}
                   }}
                 >
                   <Group align="flex-start" gap="sm">
-                   
-
                     <Stack gap="sm" style={{ flex: 1 }}>
                       <Textarea
                         id="comment-input"
@@ -243,7 +297,7 @@ onClick={() => navigate(-1)}
 
                 <Stack gap="xl">
                   {comments.map((comment, idx) => (
-                    <Box key={comment.id}>
+                    <Box key={comment.commentnum}>
                       <CommentItem comment={comment} />
                       {idx < comments.length - 1 && (
                         <Divider color={border.default} mt="lg" />

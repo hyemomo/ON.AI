@@ -85,7 +85,7 @@ export function PostDetailHeader({
                 lineClamp={1}
                 style={{ maxWidth: 240 }}
               >
-                {post.title}
+                {post.p_title}
               </Text>
             </Breadcrumbs>
           </Group>

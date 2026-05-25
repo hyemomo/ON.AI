@@ -24,14 +24,11 @@ export interface CommunityPostsResponse {
 }
 
 export interface Comment {
-  id: number;
-  author: string;
-  authorLevel?: string;
-  emoji: string;
-  childAge: string;
-  timeAgo: string;
-  body: string;
-  likes: number;
-  liked?: boolean;
-  isAuthor?: boolean;
+  commentnum: number;
+  c_user: string;
+  c_post: number;
+  nickname: string;
+  c_created_at: string;
+  c_content: string;
+
 }
