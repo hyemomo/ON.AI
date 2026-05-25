@@ -1,4 +1,4 @@
-import { useState , useEffect} from 'react';
+import { useState, useEffect } from "react";
 import {
   MantineProvider,
   createTheme,
@@ -11,11 +11,9 @@ import {
   Box,
   SimpleGrid,
   Container,
-} from '@mantine/core';
-import {
-  IconMessageCircle,
-  IconPencilPlus,
-} from "@tabler/icons-react";
+  Select,
+} from "@mantine/core";
+import { IconMessageCircle, IconPencilPlus } from "@tabler/icons-react";
 import {
   coralScale,
   border,
@@ -24,101 +22,113 @@ import {
   gradient,
   text,
 } from "@/tokens/color";
-import PostContentCard from '@/features/community/post-detail/components/PostContentCard';
-import { ALLOWED_CATEGORIES } from '@/features/community/constants';
-import type { CommunityPostsResponse, Post } from '@/features/community/post-detail/types/types';
-
+import PostContentCard from "@/features/community/post-detail/components/PostContentCard";
+import {
+  ALLOWED_CATEGORIES,
+} from "@/features/community/constants";
+import type {
+  CommunityPostsResponse,
+  Post,
+} from "@/features/community/post-detail/types/types";
+import { REGION_OPTIONS } from '@/features/auth/constants/region';
 
 const theme = createTheme({
   colors: { coral: coralScale },
-  primaryColor: 'coral',
+  primaryColor: "coral",
   primaryShade: 5,
   fontFamily: "'Plus Jakarta Sans', 'Apple SD Gothic Neo', sans-serif",
-  defaultRadius: 'md',
+  defaultRadius: "md",
   components: {
     Card: {
-      defaultProps: { radius: 'lg', withBorder: true },
+      defaultProps: { radius: "lg", withBorder: true },
       styles: {
         root: {
           borderColor: border.default,
           boxShadow: shadow.card,
           backgroundColor: surface.white,
-          transition: 'all 160ms ease-out',
-          '&:hover': {
+          transition: "all 160ms ease-out",
+          "&:hover": {
             borderColor: border.strong,
             boxShadow: shadow.cardHover,
-            transform: 'translateY(-1px)',
+            transform: "translateY(-1px)",
           },
         },
       },
     },
     Button: {
       styles: {
-        root: { fontWeight: 600, transition: 'all 160ms ease-out' },
+        root: { fontWeight: 600, transition: "all 160ms ease-out" },
       },
     },
     Badge: {
-      defaultProps: { radius: 'xl' },
+      defaultProps: { radius: "xl" },
     },
     TextInput: {
       styles: {
         input: {
           borderColor: border.default,
           backgroundColor: surface.white,
-          '&:focus': { borderColor: coralScale[3] },
+          "&:focus": { borderColor: coralScale[3] },
         },
       },
     },
   },
 });
 
-
 export default function CommunityPage() {
-  const [loading, setLoading] = useState(true)
-const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<Post[]>([]);
 
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selectedSido, setSelectedSido] = useState<string | null>(null);
+  const [selectedSigungu, setSelectedSigungu] = useState<string | null>(null);
 
-  const [activeCategory, setActiveCategory] = useState('전체');
-useEffect(() => {
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
 
-      const token = localStorage.getItem("access_token");
-      console.log(token);
-      const params = new URLSearchParams({
-        region: "부산시 중구",
-        category: activeCategory,
-        sort: "latest",
-      });
+        const token = localStorage.getItem("access_token");
 
-      const response = await fetch(
-        `http://127.0.0.1:8000/community/posts?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const params = new URLSearchParams();
+        params.append("sort", "latest");
+
+        if (selectedSido && selectedSigungu) {
+          params.append("region", `${selectedSido} ${selectedSigungu}`);
+        }
+
+        if (activeCategory) {
+          params.append("category", activeCategory);
+        }
+
+        const response = await fetch(
+          `http://127.0.0.1:8000/community/posts?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        },
-      );
+        );
 
-      if (!response.ok) {
-        throw new Error("커뮤니티 게시글 조회 실패");
+        const data: CommunityPostsResponse = await response.json();
+
+        if (!response.ok) {
+          throw new Error("커뮤니티 게시글 조회 실패");
+        }
+
+        setPosts(data.posts);
+      } catch (error) {
+        console.error(error);
+        alert("커뮤니티 게시글을 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data:CommunityPostsResponse = await response.json();
-      console.log("커뮤니티 게시글 목록:", data);
-      setPosts(data.posts)
-    } catch (error) {
-      console.error(error);
-      alert("커뮤니티 게시글을 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchPosts();
+  }, [activeCategory, selectedSido, selectedSigungu]);
 
-  fetchPosts();
-}, [activeCategory]);
   return (
     <MantineProvider theme={theme}>
       <Box
@@ -128,7 +138,6 @@ useEffect(() => {
           fontFamily: theme.fontFamily,
         }}
       >
-        {/* ── AppShell Header ── */}
         <AppShell header={{ height: 62 }} padding={0}>
           <AppShell.Header
             style={{
@@ -139,7 +148,6 @@ useEffect(() => {
           >
             <Container size="xl" h="100%">
               <Group h="100%" justify="space-between">
-                {/* 로고 */}
                 <Text
                   style={{
                     fontFamily: "DM Serif Display, serif",
@@ -155,43 +163,83 @@ useEffect(() => {
           </AppShell.Header>
 
           <AppShell.Main>
-            {/* ── 본문 레이아웃 ── */}
             <Container size="xl" py="xl">
               <SimpleGrid cols={{ base: 1 }} spacing="lg">
-                {/* ── 왼쪽: 게시글 목록 ── */}
                 <Stack gap="md">
-                  {/* 카테고리 칩 */}
-                  <Group gap="xs" wrap="wrap">
-                    {ALLOWED_CATEGORIES.map((cat) => (
-                      <Button
-                        key={cat}
-                        size="xs"
-                        radius="xl"
-                        variant={activeCategory === cat ? "light" : "outline"}
-                        color="coral"
-                        onClick={() => setActiveCategory(cat)}
-                        style={{
-                          fontWeight: 500,
-                          borderColor:
-                            activeCategory === cat
-                              ? coralScale[3]
-                              : border.default,
-                          color:
-                            activeCategory === cat
-                              ? coralScale[6]
-                              : text.secondary,
-                          backgroundColor:
-                            activeCategory === cat
-                              ? coralScale[0]
-                              : surface.white,
-                        }}
-                      >
-                        {cat}
-                      </Button>
-                    ))}
+                  <Group gap="sm" align="flex-end">
+                    <Select
+                      label="시/도"
+                      placeholder="전체 지역"
+                      data={["전체 지역", ...Object.keys(REGION_OPTIONS)]}
+                      value={selectedSido ?? "전체 지역"}
+                      onChange={(value) => {
+                        if (value === "전체 지역") {
+                          setSelectedSido(null);
+                          setSelectedSigungu(null);
+                          return;
+                        }
+
+                        setSelectedSido(value);
+                        setSelectedSigungu(null);
+                      }}
+                      clearable={false}
+                      w={180}
+                    />
+
+                    <Select
+                      label="시/군/구"
+                      placeholder="전체"
+                      data={
+                        selectedSido
+                          ? ["전체", ...REGION_OPTIONS[selectedSido]]
+                          : ["전체"]
+                      }
+                      value={selectedSigungu ?? "전체"}
+                      onChange={(value) => {
+                        setSelectedSigungu(value === "전체" ? null : value);
+                      }}
+                      disabled={
+                        !selectedSido ||
+                        REGION_OPTIONS[selectedSido].length === 0
+                      }
+                      clearable={false}
+                      w={180}
+                    />
                   </Group>
 
-                  {/* 게시글 카드들 */}
+                  <Group gap="xs" wrap="wrap">
+                    {ALLOWED_CATEGORIES.map((cat) => {
+                      const isActive =
+                        (cat === "전체" && activeCategory === null) ||
+                        activeCategory === cat;
+
+                      return (
+                        <Button
+                          key={cat}
+                          size="xs"
+                          radius="xl"
+                          variant={isActive ? "light" : "outline"}
+                          color="coral"
+                          onClick={() =>
+                            setActiveCategory(cat === "전체" ? null : cat)
+                          }
+                          style={{
+                            fontWeight: 500,
+                            borderColor: isActive
+                              ? coralScale[3]
+                              : border.default,
+                            color: isActive ? coralScale[6] : text.secondary,
+                            backgroundColor: isActive
+                              ? coralScale[0]
+                              : surface.white,
+                          }}
+                        >
+                          {cat}
+                        </Button>
+                      );
+                    })}
+                  </Group>
+
                   <Stack gap="sm">
                     {loading ? (
                       <Card p="xl">
@@ -260,7 +308,6 @@ useEffect(() => {
                       </Card>
                     )}
                   </Stack>
-                
                 </Stack>
               </SimpleGrid>
             </Container>
