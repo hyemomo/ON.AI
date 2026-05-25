@@ -1,4 +1,5 @@
 export const ALLOWED_CATEGORIES = [
+  "전체",
   "육아친구",
   "육아정보",
   "교육",
