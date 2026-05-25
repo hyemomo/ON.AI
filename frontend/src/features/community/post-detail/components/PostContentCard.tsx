@@ -10,31 +10,37 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import React, { useState } from "react";
+import React from "react";
 import { text, border } from "@/tokens/color";
 import {
   IconHeart,
   IconHeartFilled,
   IconMessageCircle,
-  IconShare3,
 } from "@tabler/icons-react";
 import type { Post } from '@/features/community/post-detail/types/types';
 import { useNavigate } from 'react-router-dom';
+import { usePostLike } from '@/features/community/hooks/usePostLike';
 
-const PostContentCard = ({ post }: { post: Post }) => {
-  const [liked, setLiked] = useState(post.is_liked);
-  const [likeCount, setLikeCount] = useState(post.like_count);
-const navigate = useNavigate()
-  const toggleLike = (e: React.MouseEvent) => {
+const PostContentCard = ({
+  post,
+  commentCount,
+}: {
+  post: Post;
+  commentCount?: number;
+}) => {
+  const { liked, likeCount, toggleLike } = usePostLike({
+    postnum: post.postnum,
+    initialLiked: post.is_liked,
+    initialLikeCount: post.like_count,
+  });
+  const navigate = useNavigate();
+  const handleToggleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    setLiked((prev) => !prev);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
+    toggleLike();
   };
-
- const handleClickCard = () => {
-   navigate(`/community/posts/${post.postnum}`);
- };
+  const handleClickCard = () => {
+    navigate(`/community/posts/${post.postnum}`);
+  };
   return (
     <Card
       onClick={handleClickCard}
@@ -42,7 +48,7 @@ const navigate = useNavigate()
       withBorder
       style={{
         cursor: "pointer",
-        borderColor: border.default
+        borderColor: border.default,
       }}
     >
       {/* 헤더 */}
@@ -131,12 +137,11 @@ const navigate = useNavigate()
           leftSection={
             liked ? <IconHeartFilled size={14} /> : <IconHeart size={14} />
           }
-          onClick={toggleLike}
+          onClick={handleToggleLike}
           style={{ fontWeight: 500 }}
         >
           {likeCount}
         </Button>
-
         <Button
           variant="subtle"
           size="xs"
@@ -144,17 +149,7 @@ const navigate = useNavigate()
           leftSection={<IconMessageCircle size={14} />}
           style={{ fontWeight: 500, color: text.muted }}
         >
-          {post.comment_count}
-        </Button>
-
-        <Button
-          variant="subtle"
-          size="xs"
-          color="gray"
-          leftSection={<IconShare3 size={14} />}
-          style={{ fontWeight: 500, color: text.muted }}
-        >
-          공유
+          {commentCount ?? post.comment_count}
         </Button>
 
         <Box style={{ flex: 1 }} />

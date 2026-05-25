@@ -45,39 +45,39 @@ export default function PostDetailPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
-
+  const [commentCount, setCommentCount] = useState(0);
   const token = localStorage.getItem("access_token");
 
-useEffect(() => {
-  const fetchComments = async () => {
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/community/comments/post/${postnum}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const response = await fetch(
+          `http://127.0.0.1:8000/community/comments/post/${postnum}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        },
-      );
+        );
 
-      const data = await response.json();
-      console.log("댓글 조회 응답:", data);
+        const data = await response.json();
+        console.log("댓글 조회 응답:", data);
 
-      if (!response.ok) {
-        throw new Error("댓글 조회 실패");
+        if (!response.ok) {
+          throw new Error("댓글 조회 실패");
+        }
+
+        setComments(data.comments ?? data);
+      } catch (error) {
+        console.error(error);
       }
+    };
 
-      setComments(data.comments ?? data);
-    } catch (error) {
-      console.error(error);
+    if (postnum) {
+      fetchComments();
     }
-  };
-
-  if (postnum) {
-    fetchComments();
-  }
-}, [postnum, token]);
+  }, [postnum, token]);
 
   useEffect(() => {
     const fetchPostDetail = async () => {
@@ -101,6 +101,7 @@ useEffect(() => {
         }
 
         setPost(data.post);
+        setCommentCount(data.post.comment_count);
       } catch (error) {
         console.error(error);
         alert("게시글을 불러오지 못했습니다.");
@@ -115,50 +116,49 @@ useEffect(() => {
     }
   }, [postnum, navigate, token]);
 
+  const handleSubmitComment = async () => {
+    if (!commentText.trim()) return;
 
-const handleSubmitComment = async () => {
-  if (!commentText.trim()) return;
-
-  try {
-    const response = await fetch(`http://127.0.0.1:8000/community/comments`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        c_content: commentText,
-        c_post: Number(postnum),
-      }),
-    });
-
-    const data = await response.json();
-    console.log("댓글 등록 응답:", data);
-
-    if (!response.ok) {
-      throw new Error("댓글 등록 실패");
-    }
-
-    setCommentText("");
-
-    const commentResponse = await fetch(
-      `http://127.0.0.1:8000/community/comments/post/${postnum}`,
-      {
-        method: "GET",
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/community/comments`, {
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-      },
-    );
+        body: JSON.stringify({
+          c_content: commentText,
+          c_post: Number(postnum),
+        }),
+      });
+      setCommentCount((prev) => prev + 1);
+      const data = await response.json();
+      console.log("댓글 등록 응답:", data);
 
-    const commentData = await commentResponse.json();
+      if (!response.ok) {
+        throw new Error("댓글 등록 실패");
+      }
 
-    setComments(commentData.comments ?? commentData);
-  } catch (error) {
-    console.error(error);
-    alert("댓글 등록에 실패했습니다.");
-  }
-};
+      setCommentText("");
+
+      const commentResponse = await fetch(
+        `http://127.0.0.1:8000/community/comments/post/${postnum}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const commentData = await commentResponse.json();
+
+      setComments(commentData.comments ?? commentData);
+    } catch (error) {
+      console.error(error);
+      alert("댓글 등록에 실패했습니다.");
+    }
+  };
 
   if (loading) {
     return (
@@ -220,8 +220,7 @@ const handleSubmitComment = async () => {
         <AppShell.Main>
           <Container size="md">
             <Stack gap="lg">
-              <PostContentCard post={post} />
-
+              <PostContentCard post={post} commentCount={commentCount} />
               <Card p="xl">
                 <Group justify="space-between" mb="lg">
                   <Text fw={700} size="md" c={text.primary}>
