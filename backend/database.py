@@ -1,11 +1,24 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from dotenv import load_dotenv
+from urllib.parse import quote_plus
+
 
 # 데이터베이스 연결 설정
-# 각자 로컬 MySQL 비밀번호에 맞게 <YOUR_PASSWORD> 부분을 변경해서 사용하시면 됩니다. <>도 포함해서 지우고 입력해 주세요!
-DATABASE_URL = "mysql+pymysql://root:0915@localhost/onai"
+# .env 파일에 비밀번호 안전하게 저장해주세요!
+load_dotenv()
 
-# SQLAlchemy 엔진 생성
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "3306")
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD", ""))
+DB_NAME = os.getenv("DB_NAME", "onai")
+
+DATABASE_URL = (
+    f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}"
+    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
 engine = create_engine(DATABASE_URL, echo=True)
 
 # DB 세션 생성

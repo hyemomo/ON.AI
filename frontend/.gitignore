@@ -1,5 +1,50 @@
+# =========================
+# Python virtual environments
+# =========================
+venv/
+.venv/
+env/
+ENV/
+
+# Windows virtualenv files
+Scripts/
+Lib/
+Include/
+pyvenv.cfg
+
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+backend/.env
+backend/.env.*
+!.env.example
+!backend/.env.example
+
+
+# =========================
+# Python cache
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# =========================
+# Python build / package
+# =========================
+pip-wheel-metadata/
+dist/
+build/
+*.egg-info/
+
+
+# =========================
 # Logs
-logs
+# =========================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,18 +52,42 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+
+# =========================
+# Node / Frontend
+# =========================
+node_modules/
+dist/
+dist-ssr/
 *.local
 
-# Editor directories and files
+
+# =========================
+# Editor / OS
+# =========================
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+
+# =========================
+# Data debug / local vector DB
+# =========================
+crawler/data/debug/*
+crawler/data/raw/*
+crawler/data/processed/*
+crawler/data/chunks/*
+crawler/data/chroma/*
+
+# Keep empty data directories
+!crawler/data/debug/.gitkeep
+!crawler/data/raw/.gitkeep
+!crawler/data/processed/.gitkeep
+!crawler/data/chunks/.gitkeep
+!crawler/data/chroma/.gitkeep
