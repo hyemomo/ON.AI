@@ -32,7 +32,8 @@ TITLE_KEYS: dict[str, str] = {
 
 POLICY_CATEGORIES = {"임신출산", "양육돌봄", "시설주거", "교육취업", "금융법률", "기타"}
 
-POLICY_MODE_PROMPT = """복지정책 질문에서 핵심 검색 키워드와 분류를 추출하세요.
+POLICY_MODE_PROMPT = """이 서비스는 한부모가족 전용 복지정책 검색 시스템입니다.
+사용자 질문에서 ChromaDB 검색에 최적화된 키워드와 분류를 추출하세요.
 
 분류 기준:
 - 임신출산: 임신, 출산, 산모, 신생아, 분만 관련
@@ -43,11 +44,14 @@ POLICY_MODE_PROMPT = """복지정책 질문에서 핵심 검색 키워드와 분
 - 기타: 위에 해당하지 않거나 여러 분야에 걸친 질문
 
 search_query 규칙:
-- 질문에 정책명이 명확히 언급된 경우 정책명을 그대로 사용하세요. 절대 "지원대상", "지원내용", "신청방법" 같은 단어를 추가하지 마세요.
-- 나이·지역 등 개인정보는 제거하고 정책 핵심 키워드만 남기세요.
+- 정책명이 명확히 언급된 경우 정책명을 그대로 사용하세요.
+- 정책명이 없는 경우, 반드시 "한부모" 키워드를 포함하여 작성하세요.
+- 나이·지역·개인 상황 등은 제거하고 정책 핵심 키워드만 남기세요.
 예) "온가족보듬사업에 대해 자세히 설명해줘" → "온가족보듬사업"
-예) "27세 춘천 주거 지원 받고 싶어" → "주거 지원 한부모"
+예) "27세 춘천 주거 지원 받고 싶어" → "한부모 주거 지원"
+예) "자가 없는데 지원 받을 수 있어?" → "한부모 주거 지원"
 예) "아동양육비 어떻게 신청해?" → "아동양육비 신청"
+예) "취업하고 싶은데 도움 받을 수 있어?" → "한부모 취업 지원"
 
 {history_block}질문: {query}
 
@@ -210,6 +214,8 @@ def classify_and_rewrite(state: ChatState) -> ChatState:
         if policy_category not in POLICY_CATEGORIES or policy_category == "기타":
             policy_category = ""
 
+        print(f"[classify] search_query={search_query!r}  policy_category={policy_category!r}")
+
         return {
             **state,
             "category": "복지정책",
@@ -315,6 +321,7 @@ def search_rag(state: ChatState) -> ChatState:
                 metas = res["metadatas"][0]
                 dists = res["distances"][0]
 
+            print(f"[search_rag] col={col_name}  top5_distances={[round(d,4) for d in dists]}")
             for doc, meta, dist in zip(docs, metas, dists):
                 if dist > MAX_DISTANCE:
                     continue

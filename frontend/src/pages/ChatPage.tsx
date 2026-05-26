@@ -200,6 +200,7 @@ const ChatPage = () => {
         inputValue={inputValue}
         setInputValue={setInputValue}
         handleSubmit={handleSubmit}
+        isLoading={isTyping}
       />
     </Box>
   );

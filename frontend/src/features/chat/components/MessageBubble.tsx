@@ -1,27 +1,10 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import type { Components } from "react-markdown";
+
 import ChatAvatar from "@/features/chat/components/chatAvatar";
 import type { ChatMessage } from "@/features/chat/types/chat.type";
 import { Badge, Group, Paper, Stack, Text } from "@mantine/core";
-
-const URL_REGEX = /(https?:\/\/[^\s]+)/g;
-
-function renderWithLinks(text: string) {
-  const parts = text.split(URL_REGEX);
-  return parts.map((part, i) =>
-    part.startsWith("http://") || part.startsWith("https://") ? (
-      <a
-        key={i}
-        href={part}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{ color: "#E84D5C", textDecoration: "underline", wordBreak: "break-all" }}
-      >
-        {part}
-      </a>
-    ) : (
-      <span key={i}>{part}</span>
-    )
-  );
-}
 
 const CATEGORY_COLORS: Record<string, string> = {
   육아: "green",
@@ -39,6 +22,56 @@ const COLLECTION_LABELS: Record<string, string> = {
   child_guide: "아동 양육 사례",
   parent_action: "양육 행동 사례",
   first_aid: "응급처치",
+};
+
+const markdownComponents: Components = {
+  p: ({ children }) => (
+    <p style={{ margin: "0 0 6px 0", lineHeight: 1.63 }}>{children}</p>
+  ),
+  strong: ({ children }) => (
+    <strong style={{ fontWeight: 700 }}>{children}</strong>
+  ),
+  ul: ({ children }) => (
+    <ul style={{ margin: "4px 0 6px 0", paddingLeft: 20 }}>{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol style={{ margin: "4px 0 6px 0", paddingLeft: 20 }}>{children}</ol>
+  ),
+  li: ({ children }) => (
+    <li style={{ marginBottom: 3, lineHeight: 1.63 }}>{children}</li>
+  ),
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: "#E84D5C", textDecoration: "underline", wordBreak: "break-all" }}
+    >
+      {children}
+    </a>
+  ),
+  code: ({ children }) => (
+    <code
+      style={{
+        background: "#FFF0F2",
+        border: "1px solid #FFE4E7",
+        padding: "1px 5px",
+        borderRadius: 4,
+        fontSize: 13,
+      }}
+    >
+      {children}
+    </code>
+  ),
+  h1: ({ children }) => (
+    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>{children}</h3>
+  ),
+  h2: ({ children }) => (
+    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>{children}</h3>
+  ),
+  h3: ({ children }) => (
+    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>{children}</h3>
+  ),
 };
 
 const MessageBubble = ({ message }: { message: ChatMessage }) => {
@@ -76,7 +109,6 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
           radius="lg"
           withBorder={!isUser}
           style={{
-            whiteSpace: "pre-line",
             wordBreak: "keep-all",
             lineHeight: 1.63,
             fontSize: 14.5,
@@ -92,7 +124,15 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
               : "0 1px 6px rgba(255, 107, 122, 0.07)",
           }}
         >
-          {renderWithLinks(message.content)}
+          {isUser ? (
+            <span style={{ whiteSpace: "pre-line" }}>{message.content}</span>
+          ) : (
+            <div style={{ fontSize: 14.5 }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {message.content}
+              </ReactMarkdown>
+            </div>
+          )}
         </Paper>
 
         {!isUser && message.sources && message.sources.length > 0 && (
