@@ -17,6 +17,7 @@ import {
   Paper,
   Breadcrumbs,
   Anchor,
+  FileButton,
 } from "@mantine/core";
 import {
   IconArrowLeft,
@@ -25,8 +26,7 @@ import {
   IconSend,
   IconAlertCircle,
 } from "@tabler/icons-react";
-import MDEditor from "@uiw/react-md-editor";
-
+import MDEditor, { commands } from "@uiw/react-md-editor";
 import colors, {
   coralScale,
   surface,
@@ -40,16 +40,17 @@ import {
   TITLE_MAX,
 } from "@/features/community/post-write/constants/constants";
 import { REGION_OPTIONS } from "@/features/auth/constants/region";
+import { useBackNavigation } from '@/hooks/useBackNavigation';
 
-interface ImageItem {
+type ImageItem = {
   id: string;
-  emoji: string;
-  name: string;
-}
+  file: File;
+  previewUrl: string;
+};
 
-interface PostWritePageProps {
-  onBack?: () => void;
-}
+const removeMarkdownHeadings = (markdown: string) => {
+  return markdown.replace(/^#{1,6}\s+/gm, "");
+};
 
 const ALLOWED_CATEGORIES = [
   "육아친구",
@@ -62,9 +63,9 @@ const ALLOWED_CATEGORIES = [
   "패션/미용",
 ];
 
-export default function PostWritePage({ onBack }: PostWritePageProps) {
+export default function PostWritePage() {
   const navigate = useNavigate();
-
+ const { handleBack } = useBackNavigation({fallbackPath:"/community"});
   const [form, setForm] = useState({
     p_title: "",
     p_content: "",
@@ -76,6 +77,36 @@ export default function PostWritePage({ onBack }: PostWritePageProps) {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+
+  const handleImageUpload = (files: File[] | null) => {
+    if (!files) return;
+
+    const remainingCount = 5 - images.length;
+
+    if (remainingCount <= 0) return;
+
+    const selectedFiles = files.slice(0, remainingCount);
+
+    const newImages = selectedFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+
+    setImages((prev) => [...prev, ...newImages]);
+  };
+
+  const handleRemoveImage = (id: string) => {
+    setImages((prev) => {
+      const target = prev.find((img) => img.id === id);
+
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+
+      return prev.filter((img) => img.id !== id);
+    });
+  };
 
   const handleChange = (name: keyof typeof form, value: string) => {
     setForm((prev) => ({
@@ -121,79 +152,57 @@ export default function PostWritePage({ onBack }: PostWritePageProps) {
   const canSubmit =
     isTitleValid && isBodyValid && isRegionValid && isCategoryValid;
 
-  const DEMO_IMAGES: ImageItem[] = [
-    { id: "1", emoji: "📸", name: "사진_001.jpg" },
-    { id: "2", emoji: "🖼️", name: "사진_002.jpg" },
-    { id: "3", emoji: "📷", name: "사진_003.jpg" },
-  ];
+  const handleSubmit = async () => {
+    console.log("전송할 form:", form);
 
-  const handleAddImage = () => {
-    if (images.length >= 5) return;
-    const next = DEMO_IMAGES[images.length % DEMO_IMAGES.length];
-    setImages((prev) => [...prev, { ...next, id: String(Date.now()) }]);
-  };
+    if (!canSubmit) return;
 
-  const handleRemoveImage = (id: string) => {
-    setImages((prev) => prev.filter((img) => img.id !== id));
-  };
+    try {
+      setSubmitLoading(true);
 
- const handleSubmit = async () => {
-   console.log("전송할 form:", form);
+      const token = localStorage.getItem("access_token");
 
-   if (!canSubmit) return;
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        navigate("/login");
+        return;
+      }
 
-   try {
-     setSubmitLoading(true);
+      const formData = new FormData();
 
-     const token = localStorage.getItem("access_token");
+      formData.append("p_title", form.p_title);
+      formData.append("p_content", removeMarkdownHeadings(form.p_content));
+      formData.append("p_region_tag", form.p_region_tag);
+      formData.append("p_category_tag", form.p_category_tag);
+      images.forEach((img, index) => {
+        formData.append(`image_${index + 1}`, img.file);
+      });
+      const response = await fetch("http://127.0.0.1:8000/community/posts/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("게시글 작성 실패:", errorData);
+        throw new Error("게시글 작성 실패");
+      }
 
-     if (!token) {
-       alert("로그인이 필요합니다.");
-       navigate("/login");
-       return;
-     }
+      const data = await response.json();
+      console.log("게시글 작성 성공:", data);
 
-     const formData = new FormData();
-
-     formData.append("p_title", form.p_title);
-     formData.append("p_content", form.p_content);
-     formData.append("p_region_tag", form.p_region_tag);
-     formData.append("p_category_tag", form.p_category_tag);
-
-     const response = await fetch("http://127.0.0.1:8000/community/posts/", {
-       method: "POST",
-       headers: {
-         Authorization: `Bearer ${token}`,
-       },
-       body: formData,
-     });
-     if (!response.ok) {
-       const errorData = await response.json();
-       console.error("게시글 작성 실패:", errorData);
-       throw new Error("게시글 작성 실패");
-     }
-
-     const data = await response.json();
-     console.log("게시글 작성 성공:", data);
-
-     alert("게시글이 등록되었습니다.");
-     navigate("/community");
-   } catch (error) {
-     console.error(error);
-     alert("게시글 등록 중 오류가 발생했습니다.");
-   } finally {
-     setSubmitLoading(false);
-   }
- };
-
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-      return;
+      alert("게시글이 등록되었습니다.");
+      navigate("/community");
+    } catch (error) {
+      console.error(error);
+      alert("게시글 등록 중 오류가 발생했습니다.");
+    } finally {
+      setSubmitLoading(false);
     }
-
-    navigate("/community");
   };
+  console.log(form);
 
   return (
     <Box style={{ minHeight: "100vh", background: surface.bg }}>
@@ -420,6 +429,18 @@ export default function PostWritePage({ onBack }: PostWritePageProps) {
                         height={320}
                         preview="edit"
                         visibleDragbar={false}
+                        commands={[
+                          commands.bold,
+                          commands.italic,
+                          commands.strikethrough,
+                          commands.divider,
+                          commands.quote,
+                          commands.unorderedListCommand,
+                          commands.orderedListCommand,
+                          commands.link,
+                          commands.code,
+                          commands.codeBlock,
+                        ]}
                         textareaProps={{
                           placeholder:
                             "육아 경험, 고민, 정보를 자유롭게 나눠보세요 🌸\n\n비슷한 고민을 가진 다른 부모님들에게 큰 도움이 됩니다.",
@@ -435,84 +456,96 @@ export default function PostWritePage({ onBack }: PostWritePageProps) {
                   </Box>
                 </Stack>
               </Card>
+              <Group justify="space-between" mb="md">
+                <Stack gap={2}>
+                  <Text size="xs" c={text.muted}>
+                    최대 10장, JPG·PNG·GIF 지원
+                  </Text>
+                </Stack>
 
-              <Card p="xl">
-                <Group justify="space-between" mb="md">
-                  <Stack gap={2}>
-                    <Text size="sm" fw={700} c={text.primary}>
-                      이미지 첨부
-                    </Text>
-                    <Text size="xs" c={text.muted}>
-                      최대 5장, JPG·PNG·GIF 지원
-                    </Text>
-                  </Stack>
-                  <Badge size="sm" color="coral" variant="light">
-                    {images.length} / 5
-                  </Badge>
-                </Group>
+                <Badge size="sm" color="coral" variant="light">
+                  {images.length} / 10
+                </Badge>
+              </Group>
 
-                <Group gap="sm" wrap="wrap">
-                  {images.length < 5 && (
-                    <Box
-                      onClick={handleAddImage}
-                      style={{
-                        width: 96,
-                        height: 96,
-                        borderRadius: 12,
-                        border: `2px dashed ${border.strong}`,
-                        background: surface.subtle,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 6,
-                        cursor: "pointer",
-                      }}
-                    >
-                      <IconPhoto size={22} color={coralScale[4]} />
-                      <Text size="xs" c={coralScale[5]} fw={500}>
-                        사진 추가
-                      </Text>
-                    </Box>
-                  )}
-
-                  {images.map((img) => (
-                    <Box
-                      key={img.id}
-                      style={{
-                        width: 96,
-                        height: 96,
-                        borderRadius: 12,
-                        background: coralScale[1],
-                        border: `1.5px solid ${border.default}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 36,
-                        position: "relative",
-                      }}
-                    >
-                      {img.emoji}
-                      <ActionIcon
-                        size={20}
-                        radius="xl"
-                        color="dark"
-                        variant="filled"
-                        onClick={() => handleRemoveImage(img.id)}
+              <Group gap="sm" wrap="wrap">
+                {images.length < 10 && (
+                  <FileButton
+                    onChange={handleImageUpload}
+                    accept="image/png,image/jpeg,image/gif"
+                    multiple
+                  >
+                    {(props) => (
+                      <Box
+                        {...props}
                         style={{
-                          position: "absolute",
-                          top: -7,
-                          right: -7,
-                          background: text.primary,
-                          boxShadow: "0 1px 4px rgba(0,0,0,.2)",
+                          width: 96,
+                          height: 96,
+                          borderRadius: 12,
+                          border: `2px dashed ${border.strong}`,
+                          background: surface.subtle,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          cursor: "pointer",
                         }}
                       >
-                        <IconX size={11} color="white" />
-                      </ActionIcon>
-                    </Box>
-                  ))}
-                </Group>
-              </Card>
+                        <IconPhoto size={22} color={coralScale[4]} />
+                        <Text size="xs" c={coralScale[5]} fw={500}>
+                          사진 추가
+                        </Text>
+                      </Box>
+                    )}
+                  </FileButton>
+                )}
+
+                {images.map((img) => (
+                  <Box
+                    key={img.id}
+                    style={{
+                      width: 96,
+                      height: 96,
+                      borderRadius: 12,
+                      background: coralScale[1],
+                      border: `1.5px solid ${border.default}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <img
+                      src={img.previewUrl}
+                      alt="첨부 이미지"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+
+                    <ActionIcon
+                      size={20}
+                      radius="xl"
+                      color="dark"
+                      variant="filled"
+                      onClick={() => handleRemoveImage(img.id)}
+                      style={{
+                        position: "absolute",
+                        top: -7,
+                        right: -7,
+                        background: text.primary,
+                        boxShadow: "0 1px 4px rgba(0,0,0,.2)",
+                      }}
+                    >
+                      <IconX size={11} color="white" />
+                    </ActionIcon>
+                  </Box>
+                ))}
+              </Group>
 
               <Stack gap="xs">
                 {!canSubmit && (
@@ -551,7 +584,7 @@ export default function PostWritePage({ onBack }: PostWritePageProps) {
                 >
                   게시글 등록하기
                 </Button>
-                
+
                 <Text size="xs" c={text.muted} ta="center">
                   커뮤니티 이용 규칙을 준수하는 게시글을 작성해주세요
                 </Text>
