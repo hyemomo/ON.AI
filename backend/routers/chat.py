@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
     message: str
     history: list[HistoryMessage] = []
     mode: str = ""
+    policy_category: str = ""
 
 
 class Source(BaseModel):
@@ -35,5 +36,5 @@ async def chat(req: ChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="메시지가 비어있습니다.")
     history = [{"role": h.role, "content": h.content} for h in req.history]
-    reply, category, sources, is_fallback = generate_reply(req.message, history, req.mode)
+    reply, category, sources, is_fallback = generate_reply(req.message, history, req.mode, req.policy_category)
     return ChatResponse(reply=reply, category=category, sources=sources, is_fallback=is_fallback)

@@ -18,11 +18,21 @@ const MODE_OPTIONS: { mode: ChatMode; label: string; icon: string; color: string
   { mode: "counseling", label: "상담",      icon: "💬", color: "#9B59B6" },
 ];
 
+const POLICY_CATEGORY_OPTIONS: { value: string; label: string; icon: string }[] = [
+  { value: "임신출산", label: "임신출산", icon: "🤰" },
+  { value: "양육돌봄", label: "양육돌봄", icon: "👶" },
+  { value: "시설주거", label: "시설주거", icon: "🏠" },
+  { value: "교육취업", label: "교육취업", icon: "💼" },
+  { value: "금융법률", label: "금융법률", icon: "⚖️" },
+  { value: "생활편의", label: "생활편의", icon: "🎫" },
+];
+
 const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [mode, setMode] = useState<ChatMode | null>(null);
+  const [policyCategory, setPolicyCategory] = useState<string | null>(null);
   const [modeStartIndex, setModeStartIndex] = useState(0);
 
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -30,11 +40,7 @@ const ChatPage = () => {
   const scrollToBottom = () => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-
-    viewport.scrollTo({
-      top: viewport.scrollHeight,
-      behavior: "smooth",
-    });
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
   };
 
   const sendMessage = (text: string) => {
@@ -52,7 +58,12 @@ const ChatPage = () => {
     setInputValue("");
     setIsTyping(true);
 
-    sendChatMessage(trimmedText, messages.slice(modeStartIndex), mode ?? "")
+    sendChatMessage(
+      trimmedText,
+      messages.slice(modeStartIndex),
+      mode ?? "",
+      mode === "policy" ? (policyCategory ?? "") : ""
+    )
       .then(({ reply, category, is_fallback, sources }) => {
         const aiMessage: ChatMessage = {
           id: createMessageId(),
@@ -87,18 +98,18 @@ const ChatPage = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  const selectedPolicyCategoryLabel = POLICY_CATEGORY_OPTIONS.find(
+    (o) => o.value === policyCategory
+  )?.label ?? "전체";
+
   return (
     <Box
       h="100dvh"
       bg="#FFF8F8"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
+      style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}
     >
       <ChatHeader />
-      {/* 채팅 영역 */}
+
       <ScrollArea
         viewportRef={viewportRef}
         style={{ flex: 1 }}
@@ -108,9 +119,7 @@ const ChatPage = () => {
             background:
               "radial-gradient(ellipse at top right, rgba(255,174,179,.12) 0%, transparent 55%), radial-gradient(ellipse at bottom left, rgba(255,214,218,.15) 0%, transparent 55%), #FFF8F8",
           },
-          scrollbar: {
-            display: "none",
-          },
+          scrollbar: { display: "none" },
         }}
       >
         <Stack gap={10}>
@@ -133,7 +142,7 @@ const ChatPage = () => {
             <MessageBubble key={message.id} message={message} />
           ))}
 
-          {/* 카테고리 선택 버튼 — 아직 선택 전이고 타이핑 중이 아닐 때만 표시 */}
+          {/* 1단계: 모드 선택 */}
           {!mode && !isTyping && (
             <Box pl={44}>
               <Text size="xs" c="#C4909A" mb={8}>
@@ -148,6 +157,7 @@ const ChatPage = () => {
                     radius="xl"
                     onClick={() => {
                       setMode(opt.mode);
+                      setPolicyCategory(null);
                       setModeStartIndex(messages.length);
                     }}
                     styles={{
@@ -165,13 +175,46 @@ const ChatPage = () => {
             </Box>
           )}
 
-          {/* 선택된 카테고리 표시 + 변경 버튼 */}
-          {mode && !isTyping && (
+          {/* 2단계: 복지정책 선택 시 서브 카테고리 선택 */}
+          {mode === "policy" && policyCategory === null && !isTyping && (
+            <Box pl={44}>
+              <Text size="xs" c="#C4909A" mb={8}>
+                📋 어떤 분야의 정책이 궁금하신가요?
+              </Text>
+              <Group gap={8} wrap="wrap">
+                {POLICY_CATEGORY_OPTIONS.map((opt) => (
+                  <Button
+                    key={opt.value}
+                    size="xs"
+                    variant="outline"
+                    radius="xl"
+                    onClick={() => setPolicyCategory(opt.value)}
+                    styles={{
+                      root: {
+                        borderColor: "#4A90E2",
+                        color: "#4A90E2",
+                        "&:hover": { backgroundColor: "#4A90E215" },
+                      },
+                    }}
+                  >
+                    {opt.icon} {opt.label}
+                  </Button>
+                ))}
+              </Group>
+            </Box>
+          )}
+
+          {/* 선택된 모드 + 카테고리 표시 */}
+          {mode && (mode !== "policy" || policyCategory !== null) && !isTyping && (
             <Box pl={44}>
               <Group gap={6} align="center">
                 <Text size="xs" c="#C4909A">
                   {MODE_OPTIONS.find((o) => o.mode === mode)?.icon}{" "}
-                  <strong>{MODE_OPTIONS.find((o) => o.mode === mode)?.label}</strong> 모드로 답변드릴게요
+                  <strong>{MODE_OPTIONS.find((o) => o.mode === mode)?.label}</strong>
+                  {mode === "policy" && policyCategory !== null && (
+                    <> · <strong>{selectedPolicyCategoryLabel}</strong></>
+                  )}
+                  {" "}모드로 답변드릴게요
                 </Text>
                 <Button
                   size="xs"
@@ -182,6 +225,7 @@ const ChatPage = () => {
                   h="auto"
                   onClick={() => {
                     setMode(null);
+                    setPolicyCategory(null);
                     setModeStartIndex(messages.length);
                   }}
                   style={{ fontSize: 11 }}

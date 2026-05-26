@@ -33,12 +33,13 @@ function buildHistory(messages: ChatMessage[]): HistoryMessage[] {
 export async function sendChatMessage(
   message: string,
   history: ChatMessage[],
-  mode: string = ""
+  mode: string = "",
+  policyCategory: string = ""
 ): Promise<ChatApiResponse> {
   const res = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, history: buildHistory(history), mode }),
+    body: JSON.stringify({ message, history: buildHistory(history), mode, policy_category: policyCategory }),
   });
 
   if (!res.ok) {

@@ -434,134 +434,133 @@ POLICY_METADATA = {
     # ══════════════════════════════════════════
     # 06 기타 (19개)
     # ══════════════════════════════════════════
+    # ══════════════════════════════════════════
+    # 06 생활편의 (8개) — 구 기타에서 재분류
+    # ══════════════════════════════════════════
     "요금감면 혜택": {
-        "category": "기타",
+        "category": "생활편의",
         "family_type": "저소득한부모",
         "income_criteria": "기초생활수급자,차상위계층",
         "support_type": "현물",
         "application_place": "해당통신사,한국전력"
     },
     "저소득층 에너지효율개선": {
-        "category": "기타",
+        "category": "생활편의",
         "family_type": "저소득한부모",
         "income_criteria": "기초생활수급자,차상위계층",
         "support_type": "현물",
         "application_place": "한국에너지공단"
     },
     "에너지바우처": {
-        "category": "기타",
+        "category": "생활편의",
         "family_type": "저소득한부모",
         "income_criteria": "기초생활수급자",
         "support_type": "현물",
         "application_place": "읍면동행정복지센터"
     },
     "전기요금 복지할인 대상 고효율가전 구매지원": {
-        "category": "기타",
+        "category": "생활편의",
         "family_type": "저소득한부모",
         "income_criteria": "기초생활수급자,차상위계층",
         "support_type": "현물",
         "application_place": "한국에너지공단"
     },
     "운전면허 무료교육": {
-        "category": "기타",
+        "category": "생활편의",
         "family_type": "저소득한부모",
         "income_criteria": "중위소득65%이하",
         "support_type": "서비스",
         "application_place": "도로교통공단"
     },
     "스포츠 강좌 이용권": {
-        "category": "기타",
+        "category": "생활편의",
         "family_type": "저소득한부모",
         "income_criteria": "기초생활수급자,차상위계층",
         "support_type": "현물",
         "application_place": "국민체육진흥공단"
     },
     "통합문화이용권": {
-        "category": "기타",
+        "category": "생활편의",
         "family_type": "저소득한부모",
         "income_criteria": "기초생활수급자,차상위계층",
         "support_type": "현물",
         "application_place": "읍면동행정복지센터"
     },
     "4대궁·종묘·조선왕릉 무료입장": {
-        "category": "기타",
+        "category": "생활편의",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "서비스",
         "application_place": "국가유산청"
     },
+    # 출생 관련 → 양육돌봄 / 금융법률 재분류
     "미혼부 자녀 출생신고": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "미혼모부",
         "income_criteria": "소득무관",
         "support_type": "서비스",
         "application_place": "가정법원"
     },
     "출생신고 완료전 미혼부 자녀 지원": {
-        "category": "기타",
+        "category": "양육돌봄",
         "family_type": "미혼모부",
         "income_criteria": "소득무관",
         "support_type": "서비스",
         "application_place": "읍면동행정복지센터,가정법원"
     },
+    # 양육비 이행 관련 → 금융법률 재분류
+    # (양육비 이행확보 지원 관련 용어 — 정보 안내 항목으로 제외)
     "양육비 이행확보 지원 서비스": {
-        "category": "기타",
-        "family_type": "전체",
-        "income_criteria": "소득무관",
-        "support_type": "법률",
-        "application_place": "양육비이행관리원"
-    },
-    "양육비 이행확보 지원 관련 용어": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "법률",
         "application_place": "양육비이행관리원"
     },
     "법률지원": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "법률",
         "application_place": "양육비이행관리원,대한법률구조공단"
     },
     "제재조치": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "법률",
         "application_place": "양육비이행관리원"
     },
     "추심지원": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "법률",
         "application_place": "양육비이행관리원"
     },
     "상담지원": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "서비스",
         "application_place": "양육비이행관리원,가족상담전화"
     },
     "모니터링": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "서비스",
         "application_place": "양육비이행관리원"
     },
     "면접교섭 서비스": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "서비스",
         "application_place": "양육비이행관리원,가족센터"
     },
     "양육비 선지급제": {
-        "category": "기타",
+        "category": "금융법률",
         "family_type": "전체",
         "income_criteria": "소득무관",
         "support_type": "현금",

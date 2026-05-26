@@ -30,18 +30,18 @@ TITLE_KEYS: dict[str, str] = {
     "first_aid": "title",
 }
 
-POLICY_CATEGORIES = {"임신출산", "양육돌봄", "시설주거", "교육취업", "금융법률", "기타"}
+POLICY_CATEGORIES = {"임신출산", "양육돌봄", "시설주거", "교육취업", "금융법률", "생활편의"}
 
 POLICY_MODE_PROMPT = """이 서비스는 한부모가족 전용 복지정책 검색 시스템입니다.
 사용자 질문에서 ChromaDB 검색에 최적화된 키워드와 분류를 추출하세요.
 
 분류 기준:
-- 임신출산: 임신, 출산, 산모, 신생아, 분만 관련
+- 임신출산: 임신, 출산, 산모, 신생아, 분만, 출생신고 관련
 - 양육돌봄: 아동수당, 양육비, 보육, 돌봄, 아동발달 관련
 - 시설주거: 주거, 매입임대, 공동생활가정, 임대 관련
 - 교육취업: 교육, 직업, 취업, 훈련, 장학금 관련
-- 금융법률: 금융, 법률, 대출, 법적 지원 관련
-- 기타: 위에 해당하지 않거나 여러 분야에 걸친 질문
+- 금융법률: 금융, 법률, 대출, 양육비 이행, 법적 지원 관련
+- 생활편의: 요금감면, 에너지, 문화, 스포츠, 운전면허 등 일상 생활 혜택
 
 search_query 규칙:
 - 정책명이 명확히 언급된 경우 정책명을 그대로 사용하세요.
@@ -52,6 +52,8 @@ search_query 규칙:
 예) "자가 없는데 지원 받을 수 있어?" → "한부모 주거 지원"
 예) "아동양육비 어떻게 신청해?" → "아동양육비 신청"
 예) "취업하고 싶은데 도움 받을 수 있어?" → "한부모 취업 지원"
+예) "전기요금 할인 받을 수 있어?" → "한부모 요금감면 혜택"
+예) "양육비 못 받고 있어요" → "한부모 양육비 이행 지원"
 
 {history_block}질문: {query}
 
@@ -188,7 +190,36 @@ def _chroma_client():
 def classify_and_rewrite(state: ChatState) -> ChatState:
     mode = state.get("mode", "")
 
-    # policy 모드: Gemini로 search_query + policy_category만 추출
+    # policy 모드 + 프론트에서 카테고리 직접 선택: Gemini 분류 없이 바로 결정
+    if mode == "policy" and state.get("policy_category"):
+        history = state.get("history", [])
+        history_block = ""
+        if history:
+            recent = history[-6:]
+            lines = "\n".join(f"  {h['role']}: {h['content'][:120]}" for h in recent)
+            history_block = f"이전 대화:\n{lines}\n\n"
+
+        model = _gemini_model("당신은 복지정책 검색 전문가입니다.")
+        raw = model.generate_content(
+            POLICY_MODE_PROMPT.format(query=state["query"], history_block=history_block)
+        ).text.strip()
+
+        try:
+            cleaned = re.sub(r"```(?:json)?|```", "", raw).strip()
+            parsed = json.loads(cleaned)
+            search_query = parsed.get("search_query", state["query"])
+        except Exception:
+            search_query = state["query"]
+
+        print(f"[classify] search_query={search_query!r}  policy_category={state['policy_category']!r}  (프론트 직접 선택)")
+        return {
+            **state,
+            "category": "복지정책",
+            "search_query": search_query,
+            "collections": ["parent_policy"],
+        }
+
+    # policy 모드 + 카테고리 미선택: Gemini로 search_query + policy_category 추출
     if mode == "policy":
         history = state.get("history", [])
         history_block = ""
@@ -376,14 +407,14 @@ def _build_graph():
 _graph = _build_graph()
 
 
-def generate_reply(message: str, history: list[dict] | None = None, mode: str = "") -> tuple[str, str, list[dict], bool]:
+def generate_reply(message: str, history: list[dict] | None = None, mode: str = "", policy_category: str = "") -> tuple[str, str, list[dict], bool]:
     initial: ChatState = {
         "query": message,
         "search_query": message,
         "history": history or [],
         "mode": mode,
         "category": "",
-        "policy_category": "",
+        "policy_category": policy_category,   # 프론트에서 직접 선택한 카테고리
         "collections": [],
         "context": "",
         "sources": [],
