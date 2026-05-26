@@ -115,7 +115,7 @@ FALLBACK_SYSTEM = """당신은 한부모가족을 위한 전문 도움 비서입
 일반적인 정보를 바탕으로 답변하되, 답변 끝에 반드시
 "※ 이 답변은 일반적인 정보입니다. 정확한 내용은 관련 기관에 문의하세요."를 추가하세요."""
 
-MAX_DISTANCE = 0.65
+MAX_DISTANCE = 0.5
 
 
 class ChatState(TypedDict):

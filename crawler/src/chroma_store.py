@@ -11,7 +11,11 @@ def get_collection(db_path: str, collection_name: str, model_name: str = EMBEDDI
         client.delete_collection(collection_name)
     except Exception:
         pass
-    return client.create_collection(name=collection_name, embedding_function=ef)
+    return client.create_collection(
+        name=collection_name,
+        embedding_function=ef,
+        metadata={"hnsw:space": "cosine"},
+    )
 
 
 def save_chunks(collection, chunks: list, batch_size: int = 100):
