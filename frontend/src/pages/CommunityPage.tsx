@@ -29,6 +29,8 @@ import type {
   Post,
 } from "@/features/community/post-detail/types/types";
 import { REGION_OPTIONS } from "@/features/auth/constants/region";
+import { useNavigate } from "react-router-dom";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 
 const theme = createTheme({
   colors: { coral: coralScale },
@@ -80,7 +82,8 @@ export default function CommunityPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedSido, setSelectedSido] = useState<string | null>(null);
   const [selectedSigungu, setSelectedSigungu] = useState<string | null>(null);
-
+  const { handleBack } = useBackNavigation();
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -153,9 +156,16 @@ export default function CommunityPage() {
                     color: text.primary,
                     letterSpacing: "-0.3px",
                   }}
+                  onClick={handleBack}
                 >
                   ON<span style={{ color: coralScale[5] }}>.</span>AI
                 </Text>
+                <Button
+                  onClick={() => navigate("/community/post/new")}
+                  variant="filled"
+                >
+                  게시물 작성하기
+                </Button>
               </Group>
             </Container>
           </AppShell.Header>
