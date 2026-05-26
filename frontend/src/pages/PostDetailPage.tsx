@@ -30,6 +30,7 @@ import type {
 } from "@/features/community/post-detail/types/types";
 import PostContentCard from "@/features/community/post-detail/components/PostContentCard";
 import CommentItem from "@/features/community/post-detail/components/CommentItem";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 
 interface PostDetailResponse {
   post: Post;
@@ -38,7 +39,6 @@ interface PostDetailResponse {
 export default function PostDetailPage() {
   const navigate = useNavigate();
   const params = useParams();
-
   const postnum = params.postnum as string;
 
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ export default function PostDetailPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentCount, setCommentCount] = useState(0);
   const token = localStorage.getItem("access_token");
-
+  const { handleBack } = useBackNavigation({ fallbackPath: "/community" });
   useEffect(() => {
     const fetchComments = async () => {
       try {
@@ -99,7 +99,7 @@ export default function PostDetailPage() {
         if (!response.ok) {
           throw new Error("게시글 상세 조회 실패");
         }
-
+        console.log(data.post);
         setPost(data.post);
         setCommentCount(data.post.comment_count);
       } catch (error) {
@@ -205,7 +205,7 @@ export default function PostDetailPage() {
                 color="coral"
                 size={36}
                 radius="xl"
-                onClick={() => navigate(-1)}
+                onClick={handleBack}
                 style={{
                   border: `1.5px solid ${border.default}`,
                   background: surface.subtle,
