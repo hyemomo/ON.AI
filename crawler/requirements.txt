@@ -3,9 +3,3 @@ chromadb
 sentence-transformers
 python-dotenv
 tqdm
-python-dotenv
-tqdm
-fastapi 
-uvicorn
-black
-isort
