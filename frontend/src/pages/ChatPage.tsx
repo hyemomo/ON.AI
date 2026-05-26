@@ -96,7 +96,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages, isTyping, mode, policyCategory]);
 
   const selectedPolicyCategoryLabel = POLICY_CATEGORY_OPTIONS.find(
     (o) => o.value === policyCategory

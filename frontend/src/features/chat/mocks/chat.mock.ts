@@ -1,23 +1,18 @@
 import type { ChatMessage } from "@/features/chat/types/chat.type";
+import { getCurrentTime } from "@/features/chat/utils/formatChatTime";
 
 export const initialMessages: ChatMessage[] = [
   {
     id: "initial-ai-1",
     role: "ai",
     content: "안녕하세요! 저는 ON.AI 육아 도우미예요 🌸",
-    time: "오전 9:21",
+    time: getCurrentTime(),
   },
   {
     id: "initial-ai-2",
     role: "ai",
     content: "오늘 어떤 것이 궁금하신가요?",
-    time: "오전 9:21",
-  },
-  {
-    id: "initial-user-1",
-    role: "user",
-    content: "아이가 밤새 38.5도 열이 나요. 어떻게 해야 할까요?",
-    time: "오전 9:22",
+    time: getCurrentTime(),
   },
 ];
 export const aiReplies = [
