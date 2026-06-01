@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from "react";
 import { ActionIcon, Box, Group, Textarea } from "@mantine/core";
 import { IconArrowRight, IconMicrophone } from "@tabler/icons-react";
 
@@ -8,12 +9,62 @@ interface ChatInputProps {
   isLoading?: boolean;
 }
 
+const BASE_URL = "http://localhost:8000/api";
+
 const ChatInput = ({
   inputValue,
   setInputValue,
   handleSubmit,
   isLoading = false,
 }: ChatInputProps) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const handleMicClick = useCallback(async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: "audio/webm;codecs=opus" });
+
+        const formData = new FormData();
+        formData.append("audio", blob, "recording.webm");
+
+        try {
+          const res = await fetch(`${BASE_URL}/stt`, { method: "POST", body: formData });
+          const data = await res.json();
+          if (data.transcript) {
+            setInputValue(inputValue ? `${inputValue} ${data.transcript}` : data.transcript);
+          }
+        } catch {
+          alert("음성 인식에 실패했습니다. 다시 시도해 주세요.");
+        }
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch {
+      alert("마이크 접근 권한이 필요합니다.");
+    }
+  }, [isRecording, inputValue, setInputValue]);
+
+  const micColor = isRecording ? "#E84D5C" : isLoading ? "#DDB8C0" : "#C4909A";
+
   return (
     <Box
       bg="#fff"
@@ -29,13 +80,30 @@ const ChatInput = ({
         <Textarea
           value={inputValue}
           onChange={(event) => setInputValue(event.currentTarget.value)}
-          placeholder={isLoading ? "답변을 기다리는 중..." : "메시지를 입력하세요..."}
+          placeholder={
+            isRecording
+              ? "듣고 있어요... 말씀해 주세요"
+              : isLoading
+              ? "답변을 기다리는 중..."
+              : "메시지를 입력하세요..."
+          }
           autosize
           minRows={1}
           maxRows={4}
           disabled={isLoading}
           style={{ flex: 1 }}
-          rightSection={<IconMicrophone size={18} color={isLoading ? "#DDB8C0" : "#C4909A"} />}
+          rightSectionPointerEvents="all"
+          rightSection={
+            <IconMicrophone
+              size={18}
+              color={micColor}
+              style={{
+                cursor: isLoading ? "not-allowed" : "pointer",
+                animation: isRecording ? "pulse 1s infinite" : "none",
+              }}
+              onClick={isLoading ? undefined : handleMicClick}
+            />
+          }
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -46,7 +114,7 @@ const ChatInput = ({
             input: {
               minHeight: 46,
               borderRadius: 26,
-              border: "1.5px solid #FFE4E7",
+              border: isRecording ? "1.5px solid #E84D5C" : "1.5px solid #FFE4E7",
               backgroundColor: isLoading ? "#FFF8F9" : "#FFF0F2",
               color: "#2D1A1E",
               fontSize: 14.5,
@@ -54,6 +122,7 @@ const ChatInput = ({
               padding: "11px 42px 11px 14px",
               opacity: isLoading ? 0.7 : 1,
               cursor: isLoading ? "not-allowed" : "text",
+              transition: "border-color 0.2s ease",
             },
           }}
         />
@@ -83,6 +152,13 @@ const ChatInput = ({
           <IconArrowRight size={21} color="white" />
         </ActionIcon>
       </Group>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.2); }
+        }
+      `}</style>
     </Box>
   );
 };

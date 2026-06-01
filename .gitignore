@@ -30,6 +30,9 @@ build/
 *.env
 .env
 
+# Google Cloud 서비스 계정 키
+backend/keys/
+
 # data debug / local vector DB
 crawler/data/debug/*
 crawler/data/raw/*

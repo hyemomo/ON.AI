@@ -1,3 +1,4 @@
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import {
   ActionIcon,
   Avatar,
@@ -14,6 +15,8 @@ import {
 } from "@tabler/icons-react";
 
 const ChatHeader = () => {
+  const {handleBack}= useBackNavigation({  fallbackPath : "/"
+})
   return (
     <Group
       h={64}
@@ -30,6 +33,7 @@ const ChatHeader = () => {
         radius="xl"
         size={36}
         color="pink"
+        onClick={handleBack}
         aria-label="뒤로가기"
         styles={{
           root: {

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from routers.chat import router as chat_router
+from routers.stt import router as stt_router
 from routers import auth
 from routers import mypage
 from routers.community import posts, comments
@@ -33,6 +34,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # 챗봇 API
 app.include_router(chat_router, prefix="/api")
+app.include_router(stt_router, prefix="/api")
 
 # 커뮤니티 API
 app.include_router(posts.router, prefix="/community/posts", tags=["Community Posts"])
