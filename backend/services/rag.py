@@ -178,6 +178,38 @@ search_query 규칙:
 반드시 아래 JSON 형식으로만 답하세요:
 {{"search_query": "검색 키워드"}}"""
 
+PARENTING_REWRITE_PROMPT = """이 서비스는 한부모가족 전용 육아 상담 정보 검색 시스템입니다.
+사용자의 육아 고민에서 ChromaDB 검색에 최적화된 키워드를 추출하세요.
+
+[DB에 저장된 육아 영역과 핵심 키워드]
+- 기본생활: 이유식, 편식, 식습관, 배변훈련, 수면, 돌아다니며 먹기, 잠투정
+- 사회성발달: 무는 행동, 할퀴기, 때리기, 물건 던지기, 또래 관계, 공격성, 나누기
+- 언어발달: 말이 늦음, 발음, 언어 표현, 어휘 발달, 옹알이
+- 정서발달: 분리불안, 감정조절, 떼쓰기, 울음, 낯가림, 불안
+- 인지발달: 집중력, 놀이, 탐구 활동, 인지 자극
+- 신체발달: 대근육, 소근육, 운동 발달
+
+search_query 규칙:
+- 부모의 자연어 표현을 위 영역과 키워드 중심으로 변환하세요.
+- 연령 정보가 있으면 포함하세요 (예: 만 2세, 11개월).
+- 구체적인 행동 증상 중심으로 2~4개 키워드로 작성하세요.
+- 나이, 개인 상황 등은 제거하고 행동 핵심만 남기세요.
+
+예) "아이가 밥을 안 먹어요" → "식습관 이유식 안 먹음 편식"
+예) "아이가 자꾸 친구를 때려요" → "공격성 때리기 사회성발달"
+예) "3살인데 말을 잘 못해요" → "만 3세 언어발달 말 늦음"
+예) "아이가 자려고 하질 않아요" → "수면 잠투정 기본생활"
+예) "분리불안이 심해요" → "분리불안 정서발달 낯가림"
+예) "아이가 떼를 너무 써요" → "떼쓰기 정서발달 감정조절"
+예) "아이가 친구를 물어요" → "무는 행동 사회성발달 공격성"
+예) "아이가 편식이 심해요" → "편식 기본생활 식습관"
+
+질문: {query}
+
+반드시 아래 JSON 형식으로만 답하세요:
+{{"search_query": "검색 키워드"}}"""
+
+
 FALLBACK_SYSTEM = """당신은 한부모가족을 위한 전문 도움 비서입니다.
 이 질문은 데이터베이스에 없는 내용입니다.
 일반적인 정보를 바탕으로 답변하되, 답변 끝에 반드시
@@ -304,7 +336,28 @@ def classify_and_rewrite(state: ChatState) -> ChatState:
             "collections": ["first_aid"],
         }
 
-    # parenting / counseling: Gemini 호출 없이 바로 결정
+    # parenting: Gemini로 쿼리 리라이팅 후 결정
+    if mode == "parenting":
+        model = _gemini_model("당신은 육아 정보 검색 전문가입니다.")
+        raw = model.generate_content(
+            PARENTING_REWRITE_PROMPT.format(query=state["query"])
+        ).text.strip()
+        try:
+            cleaned = re.sub(r"```(?:json)?|```", "", raw).strip()
+            parsed = json.loads(cleaned)
+            search_query = parsed.get("search_query", state["query"])
+        except Exception:
+            search_query = state["query"]
+        print(f"[classify] parenting search_query={search_query!r}")
+        return {
+            **state,
+            "category": "육아방법",
+            "search_query": search_query,
+            "policy_category": "",
+            "collections": ["parent_action", "child_guide"],
+        }
+
+    # counseling: Gemini 호출 없이 바로 결정
     if mode in MODE_MAP:
         mapped = MODE_MAP[mode]
         return {
