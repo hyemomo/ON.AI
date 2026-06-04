@@ -393,6 +393,7 @@ def generate_answer(state: ChatState) -> ChatState:
     ]
 
     user_context = state.get("user_context", "")
+    print(f"[user_context] mode={state.get('mode')!r}  context={user_context!r}")
     context_block = f"\n[사용자 정보]\n{user_context}\n" if user_context else ""
 
     if state.get("mode") == "counseling":

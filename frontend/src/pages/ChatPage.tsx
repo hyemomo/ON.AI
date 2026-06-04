@@ -80,7 +80,7 @@ const ChatPage = () => {
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) return;
-    fetch("http://localhost:8000/mypage/", {
+    fetch("http://localhost:8000/mypage/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
