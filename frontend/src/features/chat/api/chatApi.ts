@@ -34,12 +34,19 @@ export async function sendChatMessage(
   message: string,
   history: ChatMessage[],
   mode: string = "",
-  policyCategory: string = ""
+  policyCategory: string = "",
+  userContext: string = ""
 ): Promise<ChatApiResponse> {
   const res = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, history: buildHistory(history), mode, policy_category: policyCategory }),
+    body: JSON.stringify({
+      message,
+      history: buildHistory(history),
+      mode,
+      policy_category: policyCategory,
+      user_context: userContext,
+    }),
   });
 
   if (!res.ok) {

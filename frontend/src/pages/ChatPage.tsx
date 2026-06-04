@@ -27,6 +27,47 @@ const POLICY_CATEGORY_OPTIONS: { value: string; label: string; icon: string }[] 
   { value: "생활편의", label: "생활편의", icon: "🎫" },
 ];
 
+interface UserProfile {
+  parents_name?: string;
+  region?: string;
+  parents_mbti?: string | null;
+  children?: { child_birth: string; child_gender: string }[];
+  interests?: { interest_name: string }[];
+}
+
+function calcAge(birthStr: string): number {
+  const today = new Date();
+  const birth = new Date(birthStr);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+function buildUserContext(profile: UserProfile, mode: string): string {
+  const lines: string[] = [];
+
+  if (profile.parents_name) lines.push(`사용자 이름: ${profile.parents_name}`);
+
+  if (mode === "policy" && profile.region)
+    lines.push(`거주 지역: ${profile.region}`);
+
+  if (["policy", "parenting", "first_aid"].includes(mode) && profile.children?.length) {
+    const childDesc = profile.children
+      .map((c) => `만 ${calcAge(c.child_birth)}세 ${c.child_gender}`)
+      .join(", ");
+    lines.push(`자녀: ${childDesc}`);
+  }
+
+  if (mode === "counseling") {
+    if (profile.parents_mbti) lines.push(`MBTI: ${profile.parents_mbti}`);
+    if (profile.interests?.length)
+      lines.push(`관심사: ${profile.interests.map((i) => i.interest_name).join(", ")}`);
+  }
+
+  return lines.join(" / ");
+}
+
 const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
@@ -34,6 +75,18 @@ const ChatPage = () => {
   const [mode, setMode] = useState<ChatMode | null>(null);
   const [policyCategory, setPolicyCategory] = useState<string | null>(null);
   const [modeStartIndex, setModeStartIndex] = useState(0);
+  const [userProfile, setUserProfile] = useState<UserProfile>({});
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch("http://localhost:8000/mypage/", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => setUserProfile(data))
+      .catch(() => {});
+  }, []);
 
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -62,7 +115,8 @@ const ChatPage = () => {
       trimmedText,
       messages.slice(modeStartIndex),
       mode ?? "",
-      mode === "policy" ? (policyCategory ?? "") : ""
+      mode === "policy" ? (policyCategory ?? "") : "",
+      buildUserContext(userProfile, mode ?? "")
     )
       .then(({ reply, category, is_fallback, sources }) => {
         const aiMessage: ChatMessage = {

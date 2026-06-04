@@ -193,6 +193,7 @@ class ChatState(TypedDict):
     mode: str
     category: str
     policy_category: str
+    user_context: str
     collections: list[str]
     context: str
     sources: list[dict]
@@ -390,20 +391,24 @@ def generate_answer(state: ChatState) -> ChatState:
         {"role": h["role"], "parts": [{"text": h["content"]}]}
         for h in state["history"]
     ]
+
+    user_context = state.get("user_context", "")
+    context_block = f"\n[사용자 정보]\n{user_context}\n" if user_context else ""
+
     if state.get("mode") == "counseling":
-        model = _gemini_model(COUNSELING_SYSTEM)
+        model = _gemini_model(COUNSELING_SYSTEM + context_block)
         prompt = state["query"]
     elif state["is_fallback"]:
-        model = _gemini_model(FALLBACK_SYSTEM)
+        model = _gemini_model(FALLBACK_SYSTEM + context_block)
         prompt = state["query"]
     elif state.get("mode") == "first_aid":
-        model = _gemini_model(FIRST_AID_SYSTEM)
+        model = _gemini_model(FIRST_AID_SYSTEM + context_block)
         prompt = f"참고 자료:\n{state['context']}\n\n질문: {state['query']}"
     elif state.get("mode") == "parenting":
-        model = _gemini_model(PARENTING_SYSTEM)
+        model = _gemini_model(PARENTING_SYSTEM + context_block)
         prompt = f"참고 자료:\n{state['context']}\n\n질문: {state['query']}"
     else:
-        model = _gemini_model(POLICY_SYSTEM)
+        model = _gemini_model(POLICY_SYSTEM + context_block)
         prompt = f"참고 자료:\n{state['context']}\n\n질문: {state['query']}"
 
     chat = model.start_chat(history=gemini_history)
@@ -426,14 +431,15 @@ def _build_graph():
 _graph = _build_graph()
 
 
-def generate_reply(message: str, history: list[dict] | None = None, mode: str = "", policy_category: str = "") -> tuple[str, str, list[dict], bool]:
+def generate_reply(message: str, history: list[dict] | None = None, mode: str = "", policy_category: str = "", user_context: str = "") -> tuple[str, str, list[dict], bool]:
     initial: ChatState = {
         "query": message,
         "search_query": message,
         "history": history or [],
         "mode": mode,
         "category": "",
-        "policy_category": policy_category,   # 프론트에서 직접 선택한 카테고리
+        "policy_category": policy_category,
+        "user_context": user_context,
         "collections": [],
         "context": "",
         "sources": [],
