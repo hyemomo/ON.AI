@@ -17,6 +17,12 @@ MODE_MAP: dict[str, dict] = {
     "counseling": {"collections": [],                              "category": "상담"},
 }
 
+MODE_N_RESULTS: dict[str, int] = {
+    "policy":    5,
+    "parenting": 2,
+    "first_aid": 3,
+}
+
 TITLE_KEYS: dict[str, str] = {
     "parent_policy": "policy_name",
     "child_guide": "case_title",
@@ -157,10 +163,15 @@ FIRST_AID_REWRITE_PROMPT = """이 서비스는 소아·유아 응급처치 정�
 - 열성 경련: 경련, 발작, 고열 경련, 소아 경련, 열성경련
 - 딸꾹질: 딸꾹질 지속
 
+[DB에 없는 증상 — 절대 다른 카테고리로 대체하지 마세요]
+- 소화불량, 체증, 체하다, 배탈, 설사, 구역질(구토 제외), 두드러기, 감기, 발열(열성경련 아닌 단순 발열)
+→ 위 증상은 이 DB에 없습니다. search_query를 빈 문자열("")로 반환하세요.
+
 search_query 규칙:
 - 사용자의 자연어 문장을 위 카테고리·키워드 중심으로 변환하세요.
 - 나이, 개인 정보 등은 제거하고 응급 상황 핵심만 남기세요.
 - 증상과 카테고리명을 조합하여 2~4개의 핵심 키워드로 작성하세요.
+- DB에 없는 증상이면 반드시 search_query를 ""로 반환하세요.
 
 예) "아이가 밤새 38.5도 열이 나요" → "열성 경련 고열 응급처치"
 예) "아기가 뜨거운 물에 손을 데었어요" → "화상 응급처치 냉찜질"
@@ -179,35 +190,32 @@ search_query 규칙:
 {{"search_query": "검색 키워드"}}"""
 
 PARENTING_REWRITE_PROMPT = """이 서비스는 한부모가족 전용 육아 상담 정보 검색 시스템입니다.
-사용자의 육아 고민에서 ChromaDB 검색에 최적화된 키워드를 추출하세요.
+DB는 육아 사례를 산문체로 작성한 문서입니다. 자연어 문장 형태로 검색해야 정확도가 높습니다.
 
-[DB에 저장된 육아 영역과 핵심 키워드]
-- 기본생활: 이유식, 편식, 식습관, 배변훈련, 수면, 돌아다니며 먹기, 잠투정
-- 사회성발달: 무는 행동, 할퀴기, 때리기, 물건 던지기, 또래 관계, 공격성, 나누기
-- 언어발달: 말이 늦음, 발음, 언어 표현, 어휘 발달, 옹알이
-- 정서발달: 분리불안, 감정조절, 떼쓰기, 울음, 낯가림, 불안
-- 인지발달: 집중력, 놀이, 탐구 활동, 인지 자극
-- 신체발달: 대근육, 소근육, 운동 발달
+사용자 질문을 DB 문서와 유사한 자연어 문장으로 재표현하세요.
+
+[DB에 저장된 주요 사례 유형]
+- 기본생활: 이유식 안 먹는 경우, 편식, 식사 중 돌아다니는 경우, 배변 가리지 못하는 경우
+- 사회성발달: 무는 경우, 할퀴는 경우, 때리는 경우, 물건 던지는 행동, 교사를 밀치는 경우
+- 정서발달: 분리불안, 떼쓰기, 감정 조절 어려움, 낯가림
 
 search_query 규칙:
-- 부모의 자연어 표현을 위 영역과 키워드 중심으로 변환하세요.
-- 연령 정보가 있으면 포함하세요 (예: 만 2세, 11개월).
-- 구체적인 행동 증상 중심으로 2~4개 키워드로 작성하세요.
-- 나이, 개인 상황 등은 제거하고 행동 핵심만 남기세요.
+- 키워드 나열이 아닌 자연스러운 한국어 문장으로 작성하세요.
+- 사례 제목과 유사한 형태로 작성하세요.
+- 10~20자 내외로 간결하게 작성하세요.
 
-예) "아이가 밥을 안 먹어요" → "식습관 이유식 안 먹음 편식"
-예) "아이가 자꾸 친구를 때려요" → "공격성 때리기 사회성발달"
-예) "3살인데 말을 잘 못해요" → "만 3세 언어발달 말 늦음"
-예) "아이가 자려고 하질 않아요" → "수면 잠투정 기본생활"
-예) "분리불안이 심해요" → "분리불안 정서발달 낯가림"
-예) "아이가 떼를 너무 써요" → "떼쓰기 정서발달 감정조절"
-예) "아이가 친구를 물어요" → "무는 행동 사회성발달 공격성"
-예) "아이가 편식이 심해요" → "편식 기본생활 식습관"
+예) "아이가 밥을 안 먹어요" → "이유식을 잘 먹지 않으려고 해요"
+예) "아이가 자꾸 친구를 때려요" → "아이가 친구를 때리는 경우"
+예) "분리불안이 심해요" → "엄마와 헤어지기 싫어하는 경우"
+예) "아이가 떼를 너무 써요" → "아이가 떼를 쓰는 경우 대처법"
+예) "아이가 친구를 물어요" → "아이가 친구를 무는 경우"
+예) "아이가 편식이 심해요" → "편식이 심한 경우"
+예) "아이가 배변을 못 가려요" → "배변을 가리지 못하는 경우"
 
 질문: {query}
 
 반드시 아래 JSON 형식으로만 답하세요:
-{{"search_query": "검색 키워드"}}"""
+{{"search_query": "자연어 문장"}}"""
 
 
 FALLBACK_SYSTEM = """당신은 한부모가족을 위한 전문 도움 비서입니다.
@@ -327,6 +335,10 @@ def classify_and_rewrite(state: ChatState) -> ChatState:
             search_query = parsed.get("search_query", state["query"])
         except Exception:
             search_query = state["query"]
+        # DB에 없는 증상이면 빈 search_query → fallback 처리
+        if not search_query:
+            print(f"[classify] first_aid → DB에 없는 증상, fallback 처리")
+            return {**state, "category": "응급처치", "search_query": "", "policy_category": "", "collections": []}
         print(f"[classify] first_aid search_query={search_query!r}")
         return {
             **state,
@@ -402,9 +414,10 @@ def search_rag(state: ChatState) -> ChatState:
             if col_name == "parent_policy" and state.get("policy_category"):
                 where_filter = {"category": state["policy_category"]}
 
+            n_results = MODE_N_RESULTS.get(state.get("mode", "policy"), 5)
             res = col.query(
                 query_texts=[state["search_query"]],
-                n_results=5,
+                n_results=n_results,
                 where=where_filter,
             )
 
@@ -416,7 +429,7 @@ def search_rag(state: ChatState) -> ChatState:
             if not docs and where_filter:
                 res = col.query(
                     query_texts=[state["search_query"]],
-                    n_results=5,
+                    n_results=n_results,
                 )
                 docs = res["documents"][0]
                 metas = res["metadatas"][0]
