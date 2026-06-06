@@ -11,15 +11,23 @@ import {
   Text,
 } from "@mantine/core";
 import React from "react";
+import MDEditor from "@uiw/react-md-editor";
 import { text, border } from "@/tokens/color";
 import {
   IconHeart,
   IconHeartFilled,
   IconMessageCircle,
 } from "@tabler/icons-react";
-import type { Post } from '@/features/community/post-detail/types/types';
-import { useNavigate } from 'react-router-dom';
-import { usePostLike } from '@/features/community/hooks/usePostLike';
+import type { Post } from "@/features/community/post-detail/types/types";
+import { useLocation, useNavigate } from "react-router-dom";import { usePostLike } from "@/features/community/hooks/usePostLike";
+
+const getImageUrl = (url: string) => {
+  if (url.startsWith("http")) {
+    return url;
+  }
+
+  return `http://127.0.0.1:8000${url}`;
+};
 
 const PostContentCard = ({
   post,
@@ -28,19 +36,28 @@ const PostContentCard = ({
   post: Post;
   commentCount?: number;
 }) => {
+  const location = useLocation();
+
+  const isCommunityListPage = location.pathname === "/community";
+  const imageUrls = post.image_urls ?? [];
+
   const { liked, likeCount, toggleLike } = usePostLike({
     postnum: post.postnum,
     initialLiked: post.is_liked,
     initialLikeCount: post.like_count,
   });
+
   const navigate = useNavigate();
+
   const handleToggleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleLike();
   };
+
   const handleClickCard = () => {
     navigate(`/community/posts/${post.postnum}`);
   };
+
   return (
     <Card
       onClick={handleClickCard}
@@ -78,7 +95,7 @@ const PostContentCard = ({
         </Badge>
       </Group>
 
-      {/* 본문 */}
+      {/* 제목 */}
       <Text
         fw={600}
         size="md"
@@ -89,23 +106,28 @@ const PostContentCard = ({
         {post.p_title}
       </Text>
 
-      <Text
-        size="sm"
-        fw={300}
-        c={text.secondary}
-        mb="sm"
-        lineClamp={2}
-        style={{ lineHeight: 1.7 }}
-      >
-        {post.p_content}
-      </Text>
+      {/* 본문 - 상세 페이지에서만 표시 */}
+      {!isCommunityListPage && (
+        <Box
+          data-color-mode="light"
+          mb="sm"
+          style={{
+            color: text.secondary,
+            fontSize: 14,
+            fontWeight: 300,
+            lineHeight: 1.7,
+          }}
+        >
+          <MDEditor.Markdown source={post.p_content} />
+        </Box>
+      )}
 
       {/* 이미지 */}
-      {post.image_urls.length > 0 && (
+      {imageUrls.length > 0 && (
         <Group gap="xs" mb="sm">
-          {post.image_urls.map((imageUrl, index) => (
+          {imageUrls.map((imageUrl, index) => (
             <Box
-              key={index}
+              key={`${imageUrl}-${index}`}
               style={{
                 width: 80,
                 height: 80,
@@ -115,10 +137,10 @@ const PostContentCard = ({
               }}
             >
               <Image
-                src={imageUrl}
+                src={getImageUrl(imageUrl)}
                 alt={`게시글 이미지 ${index + 1}`}
-                width={80}
-                height={80}
+                w={80}
+                h={80}
                 fit="cover"
               />
             </Box>
@@ -142,6 +164,7 @@ const PostContentCard = ({
         >
           {likeCount}
         </Button>
+
         <Button
           variant="subtle"
           size="xs"
