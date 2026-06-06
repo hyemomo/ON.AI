@@ -80,7 +80,7 @@ const ChatPage = () => {
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) return;
-    fetch("http://localhost:8000/mypage/me", {
+    fetch("/mypage/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -89,11 +89,16 @@ const ChatPage = () => {
   }, []);
 
   const viewportRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     const viewport = viewportRef.current;
     if (!viewport) return;
     viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+  };
+
+  const scrollToLastMessage = () => {
+    lastMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const sendMessage = (text: string) => {
@@ -149,8 +154,17 @@ const ChatPage = () => {
   };
 
   useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === "ai") {
+      scrollToLastMessage();
+    } else {
+      scrollToBottom();
+    }
+  }, [messages, isTyping]);
+
+  useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping, mode, policyCategory]);
+  }, [mode, policyCategory]);
 
   const selectedPolicyCategoryLabel = POLICY_CATEGORY_OPTIONS.find(
     (o) => o.value === policyCategory
@@ -192,8 +206,10 @@ const ChatPage = () => {
             }}
           />
 
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+          {messages.map((message, index) => (
+            <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
+              <MessageBubble message={message} />
+            </div>
           ))}
 
           {/* 1단계: 모드 선택 */}
@@ -299,6 +315,7 @@ const ChatPage = () => {
         setInputValue={setInputValue}
         handleSubmit={handleSubmit}
         isLoading={isTyping}
+        placeholder={!mode ? "모드를 선택하거나 바로 질문하세요..." : undefined}
       />
     </Box>
   );

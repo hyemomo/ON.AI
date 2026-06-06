@@ -7,15 +7,17 @@ interface ChatInputProps {
   setInputValue: (value: string) => void;
   handleSubmit: () => void;
   isLoading?: boolean;
+  placeholder?: string;
 }
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = "/api";
 
 const ChatInput = ({
   inputValue,
   setInputValue,
   handleSubmit,
   isLoading = false,
+  placeholder,
 }: ChatInputProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -85,7 +87,7 @@ const ChatInput = ({
               ? "듣고 있어요... 말씀해 주세요"
               : isLoading
               ? "답변을 기다리는 중..."
-              : "메시지를 입력하세요..."
+              : placeholder ?? "메시지를 입력하세요..."
           }
           autosize
           minRows={1}
