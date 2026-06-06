@@ -10,7 +10,7 @@ class User(Base):
     __tablename__ = "USERS"
 
     usernum = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    
+
     # 로그인 기본 정보
     id = Column(String(20), nullable=False, unique=True)
     pwd = Column(String(255), nullable=False)
@@ -32,7 +32,29 @@ class User(Base):
     posts = relationship("Post", back_populates="user")
     comments = relationship("Comment", back_populates="user")
     post_likes = relationship("PostLike", back_populates="user")
-    
+
     children = relationship("Child", back_populates="user")
     interest_regions = relationship("UserInterestRegion", back_populates="user")
     interests = relationship("UserInterest", back_populates="user")
+
+    sent_matching_requests = relationship(
+        "MatchingRequest",
+        foreign_keys="MatchingRequest.requester_usernum",
+        back_populates="requester"
+    )
+    received_matching_requests = relationship(
+        "MatchingRequest",
+        foreign_keys="MatchingRequest.receiver_usernum",
+        back_populates="receiver"
+    )
+    matches_as_user1 = relationship(
+        "Match",
+        foreign_keys="Match.user1_usernum",
+        back_populates="user1"
+    )
+    matches_as_user2 = relationship(
+        "Match",
+        foreign_keys="Match.user2_usernum",
+        back_populates="user2"
+    )
+    chat_messages = relationship("ChatMessage", back_populates="sender")

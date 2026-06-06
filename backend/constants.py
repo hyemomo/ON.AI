@@ -108,6 +108,7 @@ for province, districts in REGION_OPTIONS.items():
 
 # 게시글 카테고리 태그 허용 목록
 ALLOWED_CATEGORIES = [
+    "자유"
     "육아친구",
     "육아정보",
     "교육",
