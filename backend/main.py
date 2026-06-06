@@ -6,6 +6,9 @@ from routers.chat import router as chat_router
 from routers.stt import router as stt_router
 from routers import auth
 from routers import mypage
+from routers import matching
+from routers import matching_requests
+from routers import chats
 from routers.community import posts, comments
 
 app = FastAPI(
@@ -45,6 +48,27 @@ app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
 # 마이페이지 API
 app.include_router(mypage.router, prefix="/mypage", tags=["mypage"])
+
+# AI 육아친구 추천 API 등록
+app.include_router(
+    matching.router,
+    prefix="/matching",
+    tags=["AI Matching"]
+)
+
+# 친해져요 요청/수락/매칭 완료 API 등록
+app.include_router(
+    matching_requests.router,
+    prefix="/matching",
+    tags=["Matching Requests"]
+)
+
+# 매칭 완료 후 1:1 채팅 API 등록
+app.include_router(
+    chats.router,
+    prefix="/chats",
+    tags=["Chats"]
+)
 
 
 @app.get("/")

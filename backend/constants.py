@@ -108,6 +108,7 @@ for province, districts in REGION_OPTIONS.items():
 
 # 게시글 카테고리 태그 허용 목록
 ALLOWED_CATEGORIES = [
+    "자유",
     "육아친구",
     "육아정보",
     "교육",
@@ -127,3 +128,51 @@ ALLOWED_SORT_OPTIONS = [
 
 # 인기 게시글 기준 기간
 POPULAR_PERIOD_DAYS = 7
+
+# 유저 관심사 허용 목록
+INTEREST_CATEGORIES = {
+    "parenting": {
+        "label": "육아",
+        "items": [
+            "육아 고민",
+            "아이 발달",
+            "수면 교육",
+            "식습관",
+            "놀이 활동",
+        ],
+    },
+    "education": {
+        "label": "교육",
+        "items": [
+            "책 읽기",
+            "한글 교육",
+            "영어 교육",
+            "체험 학습",
+        ],
+    },
+    "daily_life": {
+        "label": "생활",
+        "items": [
+            "집밥",
+            "산책",
+            "카페",
+            "절약",
+        ],
+    },
+    "community": {
+        "label": "교류",
+        "items": [
+            "동네 친구",
+            "육아친구",
+            "정보 공유",
+            "공감 대화",
+            "키즈카페 동행",
+        ],
+    },
+}
+
+INTERESTS = [
+    item
+    for category in INTEREST_CATEGORIES.values()
+    for item in category["items"]
+]
