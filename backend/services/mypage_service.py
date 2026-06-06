@@ -1,6 +1,11 @@
+import os
+import shutil
+import uuid
+
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
-from constants import ALLOWED_REGIONS
+from fastapi import HTTPException, UploadFile
+
+from constants import ALLOWED_REGIONS, INTERESTS
 
 from models.user import User
 from models.child import Child
@@ -13,6 +18,55 @@ from schemas.mypage_schema import (
     InterestRegionsUpdateRequest,
     InterestsUpdateRequest
 )
+
+
+PROFILE_IMAGE_UPLOAD_DIR = "static/profile_images"
+MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024
+ALLOWED_PROFILE_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
+
+
+# 프로필 이미지 파일 형식 검증
+def validate_profile_image_file(profile_image: UploadFile):
+    if profile_image.filename is None or profile_image.filename == "":
+        raise HTTPException(
+            status_code=400,
+            detail="파일 이름이 올바르지 않습니다."
+        )
+
+    file_extension = os.path.splitext(profile_image.filename)[1].lower()
+
+    if file_extension not in ALLOWED_PROFILE_IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="jpg, jpeg, png, webp 형식의 이미지만 업로드할 수 있습니다."
+        )
+
+
+# 프로필 이미지 파일 크기 검증
+def validate_profile_image_size(profile_image: UploadFile):
+    profile_image.file.seek(0, os.SEEK_END)
+    file_size = profile_image.file.tell()
+    profile_image.file.seek(0)
+
+    if file_size > MAX_PROFILE_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="프로필 이미지는 5MB 이하만 업로드할 수 있습니다."
+        )
+
+
+# 기존 프로필 이미지 파일 삭제
+def delete_old_profile_image(profile_image_url: str | None):
+    if profile_image_url is None:
+        return
+
+    if not profile_image_url.startswith("/static/profile_images/"):
+        return
+
+    old_file_path = profile_image_url.lstrip("/")
+
+    if os.path.exists(old_file_path):
+        os.remove(old_file_path)
 
 
 # 마이페이지 조회
@@ -46,6 +100,7 @@ def get_mypage(db: Session, usernum: int):
         "parents_mbti": user.parents_mbti,
         "email": user.email,
         "region": user.region,
+        "profile_image_url": user.profile_image_url,
         "created_at": user.created_at,
         "children": children,
         "interest_regions": interest_regions,
@@ -110,10 +165,74 @@ def update_mypage(db: Session, usernum: int, request: MyPageUpdateRequest):
             "parents_mbti": user.parents_mbti,
             "email": user.email,
             "region": user.region,
+            "profile_image_url": user.profile_image_url,
             "created_at": user.created_at
         }
     }
 
+
+# 프로필 이미지 수정
+def update_profile_image(
+    db: Session,
+    usernum: int,
+    profile_image: UploadFile
+):
+    user = db.query(User).filter(User.usernum == usernum).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    validate_profile_image_file(profile_image)
+    validate_profile_image_size(profile_image)
+
+    os.makedirs(PROFILE_IMAGE_UPLOAD_DIR, exist_ok=True)
+
+    file_extension = os.path.splitext(profile_image.filename)[1].lower()
+    saved_filename = f"user_{usernum}_{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(PROFILE_IMAGE_UPLOAD_DIR, saved_filename)
+
+    delete_old_profile_image(user.profile_image_url)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(profile_image.file, buffer)
+
+    profile_image_url = f"/static/profile_images/{saved_filename}"
+
+    user.profile_image_url = profile_image_url
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "message": "프로필 이미지가 수정되었습니다.",
+        "profile_image_url": user.profile_image_url
+    }
+
+
+# 프로필 이미지 삭제
+def delete_profile_image(db: Session, usernum: int):
+    user = db.query(User).filter(User.usernum == usernum).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    if user.profile_image_url is None:
+        return {
+            "message": "삭제할 프로필 이미지가 없습니다.",
+            "profile_image_url": None
+        }
+
+    delete_old_profile_image(user.profile_image_url)
+
+    user.profile_image_url = None
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "message": "프로필 이미지가 삭제되었습니다.",
+        "profile_image_url": None
+    }
 
 
 # 자녀 정보 목록 수정
@@ -122,6 +241,12 @@ def update_children(db: Session, usernum: int, request: ChildrenUpdateRequest):
 
     if user is None:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    if len(request.children) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="아이 정보는 1명만 등록할 수 있습니다."
+        )
 
     # 기존 자녀 정보 삭제
     db.query(Child).filter(Child.parentsnum == usernum).delete()
@@ -192,6 +317,19 @@ def update_interests(db: Session, usernum: int, request: InterestsUpdateRequest)
 
     # 중복 제거
     unique_interests = list(dict.fromkeys(request.interests))
+
+    if len(unique_interests) > 3:
+        raise HTTPException(
+            status_code=400,
+            detail="관심사는 최대 3개까지 등록할 수 있습니다."
+        )
+
+    for interest_name in unique_interests:
+        if interest_name not in INTERESTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"허용되지 않은 관심사입니다: {interest_name}"
+            )
 
     # 기존 관심사 삭제
     db.query(UserInterest).filter(

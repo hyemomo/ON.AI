@@ -1,23 +1,77 @@
-import type { Comment } from "@/features/community/post-detail/types/types";
-import { border, text } from "@/tokens/color";
+import { useState } from "react";
 import {
   ActionIcon,
   Avatar,
   Box,
+  Button,
   Group,
-  Menu,
   Stack,
   Text,
+  Textarea,
 } from "@mantine/core";
-import { IconDots, IconEdit, IconFlag, IconTrash } from "@tabler/icons-react";
+import { IconEdit, IconTrash } from "@tabler/icons-react";
+import type { Comment } from "@/features/community/post-detail/types/types";
+import { formatDateTime, toStaticUrl } from "@/lib/api";
+import { border, coralScale, surface, text } from "@/tokens/color";
 
-const CommentItem = ({ comment }: { comment: Comment }) => {
+type CommentItemProps = {
+  comment: Comment;
+  currentUsernum?: number;
+  onUpdate: (commentnum: number, content: string) => Promise<void>;
+  onDelete: (commentnum: number) => Promise<void>;
+};
+
+export default function CommentItem({
+  comment,
+  currentUsernum,
+  onUpdate,
+  onDelete,
+}: CommentItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.c_content);
+  const [loading, setLoading] = useState(false);
+
+  const isOwner = currentUsernum === comment.c_user;
+  const profileImageSrc = toStaticUrl(comment.profile_image_url);
+
+  const handleUpdate = async () => {
+    if (!editContent.trim()) return;
+
+    try {
+      setLoading(true);
+      await onUpdate(comment.commentnum, editContent.trim());
+      setIsEditing(false);
+    } catch (error) {
+      console.error(error);
+      alert("댓글 수정에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const ok = window.confirm("댓글을 삭제하시겠습니까?");
+    if (!ok) return;
+
+    try {
+      setLoading(true);
+      await onDelete(comment.commentnum);
+    } catch (error) {
+      console.error(error);
+      alert("댓글 삭제에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box>
       <Group align="flex-start" gap="sm" pl={0}>
         <Avatar
-          size={36}
+          src={profileImageSrc}
+          size={38}
           radius="xl"
+          color="coral"
           style={{
             border: `1.5px solid ${border.default}`,
             flexShrink: 0,
@@ -29,50 +83,94 @@ const CommentItem = ({ comment }: { comment: Comment }) => {
         <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
           <Group gap={8} justify="space-between">
             <Group gap={6}>
-              <Text size="sm" fw={600} c={text.primary}>
-                {comment.nickname}
+              <Text size="sm" fw={700} c={text.primary}>
+                {comment.nickname || "알 수 없음"}
               </Text>
 
               <Text size="xs" c={text.muted}>
-                {comment.c_created_at}
+                {formatDateTime(comment.c_created_at)}
               </Text>
             </Group>
 
-            <Menu shadow="md" radius="md" width={140}>
-              <Menu.Target>
-                <ActionIcon variant="subtle" color="gray" size="sm" radius="xl">
-                  <IconDots size={14} color={text.muted} />
+            {isOwner && !isEditing && (
+              <Group gap={4}>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  radius="xl"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <IconEdit size={14} color={text.muted} />
                 </ActionIcon>
-              </Menu.Target>
 
-              <Menu.Dropdown style={{ borderColor: border.default }}>
-                <Menu.Item leftSection={<IconFlag size={13} />}>
-                  <Text size="xs">신고하기</Text>
-                </Menu.Item>
-
-                <Menu.Item leftSection={<IconEdit size={13} />}>
-                  <Text size="xs">수정하기</Text>
-                </Menu.Item>
-
-                <Menu.Item leftSection={<IconTrash size={13} />} color="red">
-                  <Text size="xs">삭제하기</Text>
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size="sm"
+                  radius="xl"
+                  loading={loading}
+                  onClick={() => void handleDelete()}
+                >
+                  <IconTrash size={14} />
+                </ActionIcon>
+              </Group>
+            )}
           </Group>
 
-          <Text
-            size="sm"
-            fw={300}
-            c={text.secondary}
-            style={{ lineHeight: 1.7 }}
-          >
-            {comment.c_content}
-          </Text>
+          {isEditing ? (
+            <Stack gap="xs">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.currentTarget.value)}
+                autosize
+                minRows={2}
+                styles={{
+                  input: {
+                    borderColor: border.default,
+                    background: surface.white,
+                    fontSize: 14,
+                  },
+                }}
+              />
+
+              <Group justify="flex-end" gap="xs">
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="gray"
+                  onClick={() => {
+                    setEditContent(comment.c_content);
+                    setIsEditing(false);
+                  }}
+                >
+                  취소
+                </Button>
+
+                <Button
+                  size="xs"
+                  color="coral"
+                  loading={loading}
+                  disabled={!editContent.trim()}
+                  onClick={() => void handleUpdate()}
+                  style={{ background: coralScale[5] }}
+                >
+                  저장
+                </Button>
+              </Group>
+            </Stack>
+          ) : (
+            <Text
+              size="sm"
+              fw={300}
+              c={text.secondary}
+              style={{ lineHeight: 1.7, whiteSpace: "pre-wrap" }}
+            >
+              {comment.c_content}
+            </Text>
+          )}
         </Stack>
       </Group>
     </Box>
   );
-};
-
-export default CommentItem;
+}

@@ -1,100 +1,89 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  MantineProvider,
-  createTheme,
-  AppShell,
-  Group,
-  Stack,
-  Text,
+  Box,
   Button,
   Card,
-  Box,
-  SimpleGrid,
   Container,
+  Group,
+  ScrollArea,
+  SegmentedControl,
   Select,
+  SimpleGrid,
+  Stack,
+  Text,
 } from "@mantine/core";
 import { IconMessageCircle, IconPencilPlus } from "@tabler/icons-react";
+import { useNavigate } from "react-router-dom";
+import AppLayout from "@/components/AppLayout";
+import { apiFetch } from "@/lib/api";
 import {
-  coralScale,
   border,
+  coralScale,
+  gradient,
   shadow,
   surface,
-  gradient,
   text,
 } from "@/tokens/color";
 import PostContentCard from "@/features/community/post-detail/components/PostContentCard";
 import { ALLOWED_CATEGORIES } from "@/features/community/constants";
 import type {
   CommunityPostsResponse,
+  MyPageUser,
   Post,
 } from "@/features/community/post-detail/types/types";
 import { REGION_OPTIONS } from "@/features/auth/constants/region";
-import { useNavigate } from "react-router-dom";
-import { useBackNavigation } from "@/hooks/useBackNavigation";
 
-const theme = createTheme({
-  colors: { coral: coralScale },
-  primaryColor: "coral",
-  primaryShade: 5,
-  fontFamily: "'Plus Jakarta Sans', 'Apple SD Gothic Neo', sans-serif",
-  defaultRadius: "md",
-  components: {
-    Card: {
-      defaultProps: { radius: "lg", withBorder: true },
-      styles: {
-        root: {
-          borderColor: border.default,
-          boxShadow: shadow.card,
-          backgroundColor: surface.white,
-          transition: "all 160ms ease-out",
-          "&:hover": {
-            borderColor: border.strong,
-            boxShadow: shadow.cardHover,
-            transform: "translateY(-1px)",
-          },
-        },
-      },
-    },
-    Button: {
-      styles: {
-        root: { fontWeight: 600, transition: "all 160ms ease-out" },
-      },
-    },
-    Badge: {
-      defaultProps: { radius: "xl" },
-    },
-    TextInput: {
-      styles: {
-        input: {
-          borderColor: border.default,
-          backgroundColor: surface.white,
-          "&:focus": { borderColor: coralScale[3] },
-        },
-      },
-    },
-  },
-});
+type SortType = "latest" | "popular";
+
+const regionOptions = REGION_OPTIONS as Record<string, string[]>;
 
 export default function CommunityPage() {
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [currentUser, setCurrentUser] = useState<MyPageUser | null>(null);
 
+  const [sort, setSort] = useState<SortType>("latest");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedSido, setSelectedSido] = useState<string | null>(null);
   const [selectedSigungu, setSelectedSigungu] = useState<string | null>(null);
-  const { handleBack } = useBackNavigation();
-  const navigate = useNavigate();
+
   useEffect(() => {
-    const fetchPosts = async () => {
+    let isMounted = true;
+
+    const loadCurrentUser = async () => {
+      try {
+        const data = await apiFetch<MyPageUser>("/mypage/me");
+
+        if (!isMounted) return;
+
+        setCurrentUser(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    void loadCurrentUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPosts = async () => {
       try {
         setLoading(true);
 
-        const token = localStorage.getItem("access_token");
-
         const params = new URLSearchParams();
-        params.append("sort", "latest");
+        params.append("sort", sort);
 
-        if (selectedSido && selectedSigungu) {
+        if (selectedSido === "전국") {
+          params.append("region", "전국");
+        } else if (selectedSido && selectedSigungu) {
           params.append("region", `${selectedSido} ${selectedSigungu}`);
         }
 
@@ -102,87 +91,145 @@ export default function CommunityPage() {
           params.append("category", activeCategory);
         }
 
-        const response = await fetch(
-          `http://127.0.0.1:8000/community/posts?${params.toString()}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+        const data = await apiFetch<CommunityPostsResponse>(
+          `/community/posts?${params.toString()}`,
         );
 
-        const data: CommunityPostsResponse = await response.json();
+        if (!isMounted) return;
 
-        if (!response.ok) {
-          throw new Error("커뮤니티 게시글 조회 실패");
-        }
-
-        setPosts(data.posts);
+        setPosts(data.posts ?? []);
       } catch (error) {
         console.error(error);
+
+        if (!isMounted) return;
+
         alert("커뮤니티 게시글을 불러오지 못했습니다.");
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchPosts();
-  }, [activeCategory, selectedSido, selectedSigungu]);
+    void loadPosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sort, activeCategory, selectedSido, selectedSigungu]);
+
+  const handleDeletePost = async (postnum: number) => {
+    const ok = window.confirm("게시글을 삭제하시겠습니까?");
+    if (!ok) return;
+
+    try {
+      await apiFetch(`/community/posts/${postnum}`, {
+        method: "DELETE",
+      });
+
+      alert("게시글이 삭제되었습니다.");
+      setPosts((prev) => prev.filter((post) => post.postnum !== postnum));
+    } catch (error) {
+      console.error(error);
+      alert("게시글 삭제에 실패했습니다.");
+    }
+  };
+
+  const sidoData = ["전체 지역", "전국", ...Object.keys(regionOptions)];
+
+  const sigunguData =
+    selectedSido && selectedSido !== "전국"
+      ? ["전체", ...(regionOptions[selectedSido] ?? [])]
+      : ["전체"];
 
   return (
-    <MantineProvider theme={theme}>
+    <AppLayout>
       <Box
         style={{
-          minHeight: "100vh",
+          height: "calc(100vh - 134px)",
           background: surface.bg,
-          fontFamily: theme.fontFamily,
+          overflow: "hidden",
         }}
       >
-        <AppShell header={{ height: 62 }} padding={0}>
-          <AppShell.Header
+        <Container
+          size="xl"
+          h="100%"
+          py="md"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <SimpleGrid
+            cols={{ base: 1 }}
+            spacing="lg"
             style={{
-              background: "rgba(255,248,248,0.92)",
-              backdropFilter: "blur(16px)",
-              borderBottom: `1px solid ${border.default}`,
+              height: "100%",
+              minHeight: 0,
             }}
           >
-            <Container size="xl" h="100%">
-              <Group h="100%" justify="space-between">
-                <Text
-                  style={{
-                    fontFamily: "DM Serif Display, serif",
-                    fontSize: 22,
-                    color: text.primary,
-                    letterSpacing: "-0.3px",
-                  }}
-                  onClick={handleBack}
-                >
-                  ON<span style={{ color: coralScale[5] }}>.</span>AI
-                </Text>
-                <Button
-                  onClick={() => navigate("/community/post/new")}
-                  variant="filled"
-                >
-                  게시물 작성하기
-                </Button>
-              </Group>
-            </Container>
-          </AppShell.Header>
+            <Stack
+              gap="md"
+              h="100%"
+              style={{ minHeight: 0, overflow: "hidden" }}
+            >
+              <Box style={{ flexShrink: 0 }}>
+                <Group justify="space-between" align="center">
+                  <Stack gap={2}>
+                    <Text fw={800} size="xl" c={text.primary}>
+                      커뮤니티
+                    </Text>
 
-          <AppShell.Main>
-            <Container size="xl" py="xl">
-              <SimpleGrid cols={{ base: 1 }} spacing="lg">
+                    <Text size="sm" c={text.secondary}>
+                      동네 부모님들과 육아 이야기를 나눠보세요.
+                    </Text>
+                  </Stack>
+
+                  <Button
+                    onClick={() => navigate("/community/post/new")}
+                    leftSection={<IconPencilPlus size={16} />}
+                    radius="xl"
+                    style={{
+                      background: gradient.primary,
+                      boxShadow: shadow.btn,
+                    }}
+                  >
+                    게시글 작성
+                  </Button>
+                </Group>
+              </Box>
+
+              <Card p="md" withBorder style={{ flexShrink: 0 }}>
                 <Stack gap="md">
+                  <Group justify="space-between" align="center">
+                    <SegmentedControl
+                      color="coral"
+                      radius="xl"
+                      value={sort}
+                      onChange={(value) => setSort(value as SortType)}
+                      data={[
+                        { label: "최신글", value: "latest" },
+                        { label: "인기글", value: "popular" },
+                      ]}
+                    />
+                  </Group>
+
                   <Group gap="sm" align="flex-end">
                     <Select
                       label="시/도"
                       placeholder="전체 지역"
-                      data={["전체 지역", ...Object.keys(REGION_OPTIONS)]}
+                      data={sidoData}
                       value={selectedSido ?? "전체 지역"}
                       onChange={(value) => {
                         if (value === "전체 지역") {
                           setSelectedSido(null);
+                          setSelectedSigungu(null);
+                          return;
+                        }
+
+                        if (value === "전국") {
+                          setSelectedSido("전국");
                           setSelectedSigungu(null);
                           return;
                         }
@@ -197,18 +244,15 @@ export default function CommunityPage() {
                     <Select
                       label="시/군/구"
                       placeholder="전체"
-                      data={
-                        selectedSido
-                          ? ["전체", ...REGION_OPTIONS[selectedSido]]
-                          : ["전체"]
-                      }
+                      data={sigunguData}
                       value={selectedSigungu ?? "전체"}
                       onChange={(value) => {
                         setSelectedSigungu(value === "전체" ? null : value);
                       }}
                       disabled={
                         !selectedSido ||
-                        REGION_OPTIONS[selectedSido].length === 0
+                        selectedSido === "전국" ||
+                        (regionOptions[selectedSido] ?? []).length === 0
                       }
                       clearable={false}
                       w={180}
@@ -247,81 +291,103 @@ export default function CommunityPage() {
                       );
                     })}
                   </Group>
-
-                  <Stack gap="sm">
-                    {loading ? (
-                      <Card p="xl">
-                        <Text ta="center" c={text.muted}>
-                          게시글을 불러오는 중입니다...
-                        </Text>
-                      </Card>
-                    ) : posts.length > 0 ? (
-                      posts.map((post) => (
-                        <PostContentCard key={post.postnum} post={post} />
-                      ))
-                    ) : (
-                      <Card
-                        p="xl"
-                        withBorder
-                        style={{
-                          minHeight: 280,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderStyle: "dashed",
-                          borderColor: border.default,
-                          background: surface.white,
-                        }}
-                      >
-                        <Stack align="center" gap="sm">
-                          <Box
-                            style={{
-                              width: 72,
-                              height: 72,
-                              borderRadius: "50%",
-                              background: coralScale[0],
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <IconMessageCircle
-                              size={34}
-                              color={coralScale[5]}
-                            />
-                          </Box>
-
-                          <Text fw={700} size="lg" c={text.primary}>
-                            아직 게시글이 없어요
-                          </Text>
-
-                          <Text size="sm" c={text.muted} ta="center" maw={320}>
-                            선택한 지역과 카테고리에 등록된 게시글이 없습니다.
-                            첫 번째 게시글을 작성해보세요.
-                          </Text>
-
-                          <Button
-                            mt="xs"
-                            color="coral"
-                            radius="md"
-                            leftSection={<IconPencilPlus size={16} />}
-                            style={{
-                              background: gradient.primary,
-                              boxShadow: shadow.btn,
-                            }}
-                          >
-                            게시글 작성하기
-                          </Button>
-                        </Stack>
-                      </Card>
-                    )}
-                  </Stack>
                 </Stack>
-              </SimpleGrid>
-            </Container>
-          </AppShell.Main>
-        </AppShell>
+              </Card>
+
+              <ScrollArea
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                }}
+                styles={{
+                  root: {
+                    flex: 1,
+                    minHeight: 0,
+                  },
+                  viewport: {
+                    paddingRight: 4,
+                  },
+                  scrollbar: {
+                    display: "none",
+                  },
+                }}
+              >
+                <Stack gap="sm" pb="md">
+                  {loading ? (
+                    <Card p="xl">
+                      <Text ta="center" c={text.muted}>
+                        게시글을 불러오는 중입니다...
+                      </Text>
+                    </Card>
+                  ) : posts.length > 0 ? (
+                    posts.map((post) => (
+                      <PostContentCard
+                        key={post.postnum}
+                        post={post}
+                        currentUsernum={currentUser?.usernum}
+                        onDelete={handleDeletePost}
+                      />
+                    ))
+                  ) : (
+                    <Card
+                      p="xl"
+                      withBorder
+                      style={{
+                        minHeight: 280,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderStyle: "dashed",
+                        borderColor: border.default,
+                        background: surface.white,
+                      }}
+                    >
+                      <Stack align="center" gap="sm">
+                        <Box
+                          style={{
+                            width: 72,
+                            height: 72,
+                            borderRadius: "50%",
+                            background: coralScale[0],
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <IconMessageCircle size={34} color={coralScale[5]} />
+                        </Box>
+
+                        <Text fw={700} size="lg" c={text.primary}>
+                          아직 게시글이 없어요
+                        </Text>
+
+                        <Text size="sm" c={text.muted} ta="center" maw={320}>
+                          선택한 조건에 등록된 게시글이 없습니다. 첫 번째
+                          게시글을 작성해보세요.
+                        </Text>
+
+                        <Button
+                          mt="xs"
+                          color="coral"
+                          radius="md"
+                          leftSection={<IconPencilPlus size={16} />}
+                          onClick={() => navigate("/community/post/new")}
+                          style={{
+                            background: gradient.primary,
+                            boxShadow: shadow.btn,
+                          }}
+                        >
+                          게시글 작성하기
+                        </Button>
+                      </Stack>
+                    </Card>
+                  )}
+                </Stack>
+              </ScrollArea>
+            </Stack>
+          </SimpleGrid>
+        </Container>
       </Box>
-    </MantineProvider>
+    </AppLayout>
   );
 }
