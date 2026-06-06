@@ -75,6 +75,12 @@ POLICY_SYSTEM = """당신은 한부모가족을 위한 전문 복지 도우미�
    - 참고 자료에 신청URL이 있으면 답변 마지막에 아래 형식으로 반드시 포함하세요:
      신청 바로가기: https://...
 
+3. 주거·시설 관련 정책(임대주택, 공동생활가정, 주거 지원 등)을 답변할 때:
+   - 사용자 정보에 거주 지역이 있으면 반드시 그 지역을 언급하며 안내하세요.
+   - 사용자 정보에 거주 지역이 있으면, 그 지역 중심으로 신청 가능한 정책을 우선 안내하세요
+   
+    
+
 답변은 한국어로 작성하세요."""
 
 PARENTING_SYSTEM = """당신은 한부모가족을 위한 육아 전문 상담사입니다.
@@ -134,12 +140,29 @@ COUNSELING_SYSTEM = """당신은 한부모가족을 위한 심리 상담 전문 
 FIRST_AID_SYSTEM = """당신은 소아·유아 응급처치 전문 안내 AI입니다.
 아래 참고 자료를 바탕으로 침착하고 명확하게 응급처치 방법을 안내하세요.
 
-[답변 규칙]
-- 참고 자료에 있는 내용만 안내하세요. 없는 내용은 추측하지 마세요.
-- 즉시 해야 할 응급처치 순서를 번호로 안내하세요.
-- 병원에 가야 하는 심각한 상황이면 반드시 명시하세요.
-- 복지 정책, 지원금 등 응급처치와 무관한 내용은 언급하지 마세요.
+[답변 구조 — 반드시 이 순서로 작성하세요]
+1. 긴급도 판단: 첫 문장에 상황의 긴급도를 한 줄로 명시하세요.
+   예) "즉시 119에 신고가 필요한 상황입니다." / "가정에서 처치 후 소아과 방문을 권장합니다."
+
+2. 즉시 처치 단계: 번호 목록으로 지금 당장 해야 할 행동을 순서대로 안내하세요.
+   - 각 단계는 짧고 명확하게 작성하세요.
+   - 참고 자료에 있는 내용만 사용하세요. 없는 내용은 절대 추측하지 마세요.
+
+3. 병원 이송 기준: 아래 중 해당되는 경우 반드시 명시하세요.
+   - 즉시 119 신고 또는 응급실 이송이 필요한 증상
+   - 수 시간 내 소아과·응급실 방문이 필요한 증상
+   - 사용자 정보에 거주 지역이 있으면, 그 지역의 실제 병원명(지역 보건소, 대학병원 응급실 등)을
+     1~2곳 구체적으로 안내하세요. 당신이 알고 있는 일반 지식을 활용하세요.
+     예) 거주 지역이 춘천이면 → "춘천시 보건소 또는 강원대학교병원 응급실로 이송하세요."
+     예) 거주 지역이 서울이면 → "서울대학교어린이병원 또는 세브란스어린이병원 응급실로 이송하세요."
+
+4. 주의사항: 절대 하면 안 되는 행동이 참고 자료에 있으면 굵게 강조해서 안내하세요.
+
+[추가 규칙]
+- 답변 전체는 간결하고 빠르게 읽힐 수 있도록 작성하세요. 부모가 패닉 상태임을 고려하세요.
+- 복지 정책, 지원금 등 응급처치와 무관한 내용은 절대 언급하지 마세요.
 - 답변은 한국어로 작성하세요."""
+
 
 FIRST_AID_REWRITE_PROMPT = """이 서비스는 소아·유아 응급처치 정보 검색 시스템입니다.
 사용자 질문에서 ChromaDB 검색에 최적화된 키워드를 추출하세요.
@@ -218,12 +241,47 @@ search_query 규칙:
 {{"search_query": "자연어 문장"}}"""
 
 
+CLASSIFY_AND_REWRITE_PROMPT = """다음 사용자 질문을 분석하여 JSON으로 답하세요.
+
+카테고리:
+- 육아: 아이 발달, 훈육, 수면, 식습관, 행동, 정서 등 양육 전반
+- 정책: 복지 혜택, 지원금, 수당, 서비스 신청 방법 등 정부/기관 정책
+- 응급대처: 아이 부상, 발열, 사고, 응급 상황 대응 방법
+- 기타: 위 세 카테고리에 해당하지 않는 내용
+
+search_query: 질문에서 핵심 키워드만 추출해 검색에 최적화된 구문으로 변환하세요.
+예) "아동양육비 어떻게 신청해?" → "아동양육비 신청 방법"
+예) "아이가 밥을 안 먹어요" → "이유식을 잘 먹지 않으려고 해요"
+예) "주거 지원 받고 싶어" → "한부모 주거 지원"
+예) "아이가 넘어져서 머리를 다쳤어요" → "머리 부딪힘 응급처치"
+
+policy_category: category가 "정책"일 때만 아래 중 가장 잘 맞는 것을 선택하세요. 해당 없으면 "".
+- 임신출산: 임신, 출산, 산모, 신생아 관련
+- 양육돌봄: 아동수당, 양육비, 보육, 돌봄 관련
+- 시설주거: 주거, 임대, 공동생활가정 관련
+- 교육취업: 교육, 취업, 훈련, 장학금 관련
+- 금융법률: 금융, 법률, 대출, 법적 지원 관련
+- 생활편의: 요금감면, 문화, 일상 생활 혜택
+
+{history_block}현재 질문: {query}
+
+반드시 아래 JSON 형식으로만 답하세요:
+{{"category": "카테고리명", "search_query": "검색 최적화 쿼리", "policy_category": "정책분류또는빈문자열"}}"""
+
+AUTO_CATEGORY_MAP: dict[str, dict] = {
+    "정책":    {"mode": "policy",    "collections": ["parent_policy"],               "category": "복지정책"},
+    "육아":    {"mode": "parenting", "collections": ["parent_action", "child_guide"], "category": "육아방법"},
+    "응급대처": {"mode": "first_aid", "collections": ["first_aid"],                   "category": "응급처치"},
+    "기타":    {"mode": "",          "collections": [],                               "category": ""},
+}
+
 FALLBACK_SYSTEM = """당신은 한부모가족을 위한 전문 도움 비서입니다.
 이 질문은 데이터베이스에 없는 내용입니다.
 일반적인 정보를 바탕으로 답변하되, 답변 끝에 반드시
 "※ 이 답변은 일반적인 정보입니다. 정확한 내용은 관련 기관에 문의하세요."를 추가하세요."""
 
 MAX_DISTANCE = 0.5
+MAX_DISTANCE_FIRST_AID = 0.7
 
 
 class ChatState(TypedDict):
@@ -380,13 +438,44 @@ def classify_and_rewrite(state: ChatState) -> ChatState:
             "collections": mapped["collections"],
         }
 
-    # mode 없음: fallback 처리
+    # mode 없음: Gemini 자동 분류
+    history = state.get("history", [])
+    history_block = ""
+    if history:
+        recent = history[-6:]
+        lines = "\n".join(f"  {h['role']}: {h['content'][:120]}" for h in recent)
+        history_block = f"이전 대화:\n{lines}\n\n"
+
+    model = _gemini_model("당신은 질문 분류 및 검색 쿼리 최적화 전문가입니다.")
+    raw = model.generate_content(
+        CLASSIFY_AND_REWRITE_PROMPT.format(query=state["query"], history_block=history_block)
+    ).text.strip()
+
+    try:
+        cleaned = re.sub(r"```(?:json)?|```", "", raw).strip()
+        parsed = json.loads(cleaned)
+        auto_cat = parsed.get("category", "기타")
+        search_query = parsed.get("search_query", state["query"])
+        policy_category = parsed.get("policy_category", "")
+    except Exception:
+        auto_cat = "기타"
+        search_query = state["query"]
+        policy_category = ""
+
+    if auto_cat not in AUTO_CATEGORY_MAP:
+        auto_cat = "기타"
+    if policy_category not in POLICY_CATEGORIES:
+        policy_category = ""
+
+    mapped = AUTO_CATEGORY_MAP[auto_cat]
+    print(f"[classify] auto → category={auto_cat!r}  search_query={search_query!r}  policy_category={policy_category!r}")
     return {
         **state,
-        "category": "",
-        "search_query": state["query"],
-        "policy_category": "",
-        "collections": [],
+        "mode": mapped["mode"],
+        "category": mapped["category"],
+        "search_query": search_query,
+        "policy_category": policy_category,
+        "collections": mapped["collections"],
     }
 
 
@@ -437,7 +526,8 @@ def search_rag(state: ChatState) -> ChatState:
 
             print(f"[search_rag] col={col_name}  top5_distances={[round(d,4) for d in dists]}")
             for doc, meta, dist in zip(docs, metas, dists):
-                if dist > MAX_DISTANCE:
+                threshold = MAX_DISTANCE_FIRST_AID if col_name == "first_aid" else MAX_DISTANCE
+                if dist > threshold:
                     continue
                 title = meta.get(title_key) or meta.get("category", "")
                 url = meta.get("detail_url", "")

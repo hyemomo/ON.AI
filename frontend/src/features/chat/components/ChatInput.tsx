@@ -5,7 +5,7 @@ import { IconArrowRight, IconMicrophone } from "@tabler/icons-react";
 interface ChatInputProps {
   inputValue: string;
   setInputValue: (value: string) => void;
-  handleSubmit: () => void;
+  handleSubmit: (overrideValue?: string) => void;
   isLoading?: boolean;
   placeholder?: string;
 }
@@ -22,6 +22,14 @@ const ChatInput = ({
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 한글 IME 문제 대응: 버튼 클릭 시 DOM 실제 값을 직접 전달
+  const handleSubmitWithIME = () => {
+    const domValue = (textareaRef.current?.value ?? inputValue).trim();
+    if (!domValue) return;
+    handleSubmit(domValue);
+  };
 
   const handleMicClick = useCallback(async () => {
     if (isRecording) {
@@ -80,6 +88,7 @@ const ChatInput = ({
     >
       <Group align="flex-end" gap={8} wrap="nowrap">
         <Textarea
+          ref={textareaRef}
           value={inputValue}
           onChange={(event) => setInputValue(event.currentTarget.value)}
           placeholder={
@@ -135,7 +144,7 @@ const ChatInput = ({
           variant="filled"
           color="pink"
           aria-label="메시지 전송"
-          onClick={handleSubmit}
+          onClick={handleSubmitWithIME}
           disabled={isLoading}
           styles={{
             root: {

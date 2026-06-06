@@ -49,10 +49,10 @@ function buildUserContext(profile: UserProfile, mode: string): string {
 
   if (profile.parents_name) lines.push(`사용자 이름: ${profile.parents_name}`);
 
-  if (mode === "policy" && profile.region)
+  if ((mode === "policy" || mode === "first_aid" || mode === "") && profile.region)
     lines.push(`거주 지역: ${profile.region}`);
 
-  if (["policy", "parenting", "first_aid"].includes(mode) && profile.children?.length) {
+  if (["policy", "parenting", "first_aid", ""].includes(mode) && profile.children?.length) {
     const childDesc = profile.children
       .map((c) => `만 ${calcAge(c.child_birth)}세 ${c.child_gender}`)
       .join(", ");
@@ -149,8 +149,8 @@ const ChatPage = () => {
       });
   };
 
-  const handleSubmit = () => {
-    sendMessage(inputValue);
+  const handleSubmit = (overrideValue?: string) => {
+    sendMessage(overrideValue ?? inputValue);
   };
 
   useEffect(() => {

@@ -17,13 +17,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   상담: "violet",
 };
 
-const COLLECTION_LABELS: Record<string, string> = {
-  parent_policy: "복지정책",
-  child_guide: "아동 양육 사례",
-  parent_action: "양육 행동 사례",
-  first_aid: "응급처치",
-};
-
 const markdownComponents: Components = {
   p: ({ children }) => (
     <p style={{ margin: "0 0 6px 0", lineHeight: 1.63 }}>{children}</p>
@@ -134,36 +127,6 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
             </div>
           )}
         </Paper>
-
-        {!isUser && message.sources && message.sources.length > 0 && (
-          <Stack gap={2} px={4}>
-            <Text size="xs" c="#C4909A">
-              📎 참고 자료
-            </Text>
-            {message.sources.map((src, i) => {
-              const label = `· [${COLLECTION_LABELS[src.collection] ?? src.collection}] ${src.title}`;
-              return src.url ? (
-                <Text
-                  key={i}
-                  size="xs"
-                  component="a"
-                  href={src.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#E84D5C", textDecoration: "none" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
-                >
-                  {label} ↗
-                </Text>
-              ) : (
-                <Text key={i} size="xs" c="#C4909A">
-                  {label}
-                </Text>
-              );
-            })}
-          </Stack>
-        )}
 
         <Text size="xs" c="#C4909A" px={4}>
           {message.time}
