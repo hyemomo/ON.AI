@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from routers import auth
 from routers import mypage
+from routers import matching
+from routers import matching_requests
+from routers import chats
 from routers.community import posts, comments
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,8 +31,8 @@ app.add_middleware(
 
 # 정적 파일
 app.mount(
-    "/static", 
-    StaticFiles(directory="static"), 
+    "/static",
+    StaticFiles(directory="static"),
     name="static"
 )
 
@@ -59,6 +62,27 @@ app.include_router(
     mypage.router,
     prefix="/mypage",
     tags=["mypage"]
+)
+
+# AI 육아친구 추천 API 등록
+app.include_router(
+    matching.router,
+    prefix="/matching",
+    tags=["AI Matching"]
+)
+
+# 친해져요 요청/수락/매칭 완료 API 등록
+app.include_router(
+    matching_requests.router,
+    prefix="/matching",
+    tags=["Matching Requests"]
+)
+
+# 매칭 완료 후 1:1 채팅 API 등록
+app.include_router(
+    chats.router,
+    prefix="/chats",
+    tags=["Chats"]
 )
 
 

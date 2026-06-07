@@ -123,3 +123,71 @@ CREATE TABLE PHOTO_IMAGES (
         FOREIGN KEY (image_postnum) REFERENCES POSTS(postnum)
         ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS MATCHING_REQUESTS (
+    request_id INT NOT NULL AUTO_INCREMENT,
+    requester_usernum INT NOT NULL,
+    receiver_usernum INT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    message VARCHAR(255),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    responded_at DATETIME,
+
+    PRIMARY KEY (request_id),
+
+    CONSTRAINT fk_matching_requests_requester
+        FOREIGN KEY (requester_usernum) REFERENCES USERS(usernum),
+    CONSTRAINT fk_matching_requests_receiver
+        FOREIGN KEY (receiver_usernum) REFERENCES USERS(usernum),
+
+    CONSTRAINT uq_matching_request_pair
+        UNIQUE (requester_usernum, receiver_usernum)
+);
+
+CREATE TABLE IF NOT EXISTS MATCHES (
+    match_id INT NOT NULL AUTO_INCREMENT,
+    user1_usernum INT NOT NULL,
+    user2_usernum INT NOT NULL,
+    matching_request_id INT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (match_id),
+
+    CONSTRAINT fk_matches_user1
+        FOREIGN KEY (user1_usernum) REFERENCES USERS(usernum),
+    CONSTRAINT fk_matches_user2
+        FOREIGN KEY (user2_usernum) REFERENCES USERS(usernum),
+    CONSTRAINT fk_matches_matching_request
+        FOREIGN KEY (matching_request_id) REFERENCES MATCHING_REQUESTS(request_id),
+
+    CONSTRAINT uq_match_user_pair
+        UNIQUE (user1_usernum, user2_usernum)
+);
+
+CREATE TABLE IF NOT EXISTS CHAT_ROOMS (
+    room_id INT NOT NULL AUTO_INCREMENT,
+    match_id INT NOT NULL UNIQUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_message_at DATETIME,
+
+    PRIMARY KEY (room_id),
+
+    CONSTRAINT fk_chat_rooms_match
+        FOREIGN KEY (match_id) REFERENCES MATCHES(match_id)
+);
+
+CREATE TABLE IF NOT EXISTS CHAT_MESSAGES (
+    message_id INT NOT NULL AUTO_INCREMENT,
+    room_id INT NOT NULL,
+    sender_usernum INT NOT NULL,
+    content VARCHAR(1000) NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (message_id),
+
+    CONSTRAINT fk_chat_messages_room
+        FOREIGN KEY (room_id) REFERENCES CHAT_ROOMS(room_id),
+    CONSTRAINT fk_chat_messages_sender
+        FOREIGN KEY (sender_usernum) REFERENCES USERS(usernum)
+);
