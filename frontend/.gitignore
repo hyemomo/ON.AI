@@ -8,10 +8,8 @@ ENV/
 
 # Windows virtualenv files
 Scripts/
-Lib/
 Include/
 pyvenv.cfg
-
 
 # =========================
 # Environment variables
