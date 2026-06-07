@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -33,6 +33,32 @@ def update_my_mypage(
     db: Session = Depends(get_db)
 ):
     return mypage_service.update_mypage(db, current_user.usernum, request)
+
+
+# 내 프로필 이미지 수정
+@router.put("/me/profile-image")
+def update_my_profile_image(
+    profile_image: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return mypage_service.update_profile_image(
+        db=db,
+        usernum=current_user.usernum,
+        profile_image=profile_image
+    )
+
+
+# 내 프로필 이미지 삭제
+@router.delete("/me/profile-image")
+def delete_my_profile_image(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return mypage_service.delete_profile_image(
+        db=db,
+        usernum=current_user.usernum
+    )
 
 
 # 내 자녀 정보 수정

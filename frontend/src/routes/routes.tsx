@@ -1,54 +1,130 @@
 import { createBrowserRouter } from "react-router-dom";
-import ChatPage from "../pages/ChatPage";
+
+import HomePage from "@/pages/HomePage";
+import SignupPage from "@/pages/SignupPage";
+import LoginPage from "@/pages/LoginPage";
+import ChatPage from "@/pages/ChatPage";
 import CommunityPage from "@/pages/CommunityPage";
 import PostDetailPage from "@/pages/PostDetailPage";
 import PostWritePage from "@/pages/PostWritePage";
+import MyPage from "@/pages/MyPage";
+import FriendFindPage from "@/pages/FriendFindPage";
+import FriendChatPage from "@/pages/FriendChatPage";
 import Test from "@/pages/Test";
-import SignupPage from "@/pages/SignupPage";
-import LoginPage from "@/pages/LoginPage";
-import HomePage from "@/pages/HomePage";
-import ChildInfoStep from '@/features/onboarding/components/ChildInfoStep';
-import InterestStep from '@/features/onboarding/components/InterestStep';
+
+import ChildInfoStep from "@/features/onboarding/components/ChildInfoStep";
+import InterestStep from "@/features/onboarding/components/InterestStep";
+
+import ProtectedRoute from "@/routes/ProtectedRoute";
+import PublicOnlyRoute from "@/routes/PublicOnlyRoute";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomePage />,
+    element: (
+      <PublicOnlyRoute>
+        <HomePage />
+      </PublicOnlyRoute>
+    ),
   },
   {
     path: "/signup",
-    element: <SignupPage />,
+    element: (
+      <PublicOnlyRoute>
+        <SignupPage />
+      </PublicOnlyRoute>
+    ),
   },
   {
     path: "/login",
-    element: <LoginPage />,
+    element: (
+      <PublicOnlyRoute>
+        <LoginPage />
+      </PublicOnlyRoute>
+    ),
   },
   {
     path: "/chat",
-    element: <ChatPage />,
+    element: (
+      <ProtectedRoute>
+        <ChatPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/community",
-    element: <CommunityPage />,
+    element: (
+      <ProtectedRoute>
+        <CommunityPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/community/posts/:postnum",
-    element: <PostDetailPage />,
+    element: (
+      <ProtectedRoute>
+        <PostDetailPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/community/posts/:postnum/edit",
+    element: (
+      <ProtectedRoute>
+        <PostWritePage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/community/post/new",
-    element: <PostWritePage />,
+    element: (
+      <ProtectedRoute>
+        <PostWritePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/friends",
+    element: (
+      <ProtectedRoute>
+        <FriendFindPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/friends/chat/:roomId",
+    element: (
+      <ProtectedRoute>
+        <FriendChatPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/mypage",
+    element: (
+      <ProtectedRoute>
+        <MyPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/onboarding/children",
+    element: (
+      <ProtectedRoute>
+        <ChildInfoStep />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/onboarding/interests",
+    element: (
+      <ProtectedRoute>
+        <InterestStep />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/test",
     element: <Test />,
-  },
-  {
-    path: "/onboarding/children",
-    element: <ChildInfoStep/>,
-  },
-  {
-    path: "/onboarding/interests",
-    element: <InterestStep/>,
   },
 ]);

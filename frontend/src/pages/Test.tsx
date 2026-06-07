@@ -1,12 +1,17 @@
-import React from "react";
+import { useState } from "react";
 import MDEditor from "@uiw/react-md-editor";
 
 export default function Test() {
-  const [value, setValue] = React.useState("**Hello world!!!**");
+  const [value, setValue] = useState("");
+
   return (
-    <div className="container">
-      <MDEditor value={value} onChange={setValue} />
-      <MDEditor.Markdown source={value} style={{ whiteSpace: "pre-wrap" }} />
+    <div data-color-mode="light">
+      <MDEditor
+        value={value}
+        onChange={(nextValue) => {
+          setValue(nextValue ?? "");
+        }}
+      />
     </div>
   );
 }

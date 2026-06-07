@@ -26,12 +26,14 @@ class PostResponse(BaseModel):
     p_content: str
     p_user: int
     nickname: str
+    profile_image_url: str | None = None
     p_region_tag: str
     p_category_tag: str
     p_created_at: datetime
     comment_count: int
     like_count: int
     is_liked: bool
+    image_urls: list[str] = []
 
     class Config:
         from_attributes = True

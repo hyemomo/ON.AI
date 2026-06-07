@@ -10,7 +10,7 @@ from schemas.comment_schema import CommentCreate, CommentUpdateRequest
 # 특정 게시글의 댓글 조회
 def get_comments_by_post(db: Session, postnum: int):
     comments = (
-        db.query(Comment, User.nickname)
+        db.query(Comment, User.nickname, User.profile_image_url)
         .join(User, Comment.c_user == User.usernum)
         .filter(Comment.c_post == postnum)
         .order_by(Comment.commentnum.asc())
@@ -19,13 +19,14 @@ def get_comments_by_post(db: Session, postnum: int):
 
     result = []
 
-    for comment, nickname in comments:
+    for comment, nickname, profile_image_url in comments:
         result.append({
             "commentnum": comment.commentnum,
             "c_content": comment.c_content,
             "c_user": comment.c_user,
             "c_post": comment.c_post,
             "nickname": nickname,
+            "profile_image_url": profile_image_url,
             "c_created_at": comment.c_created_at
         })
 

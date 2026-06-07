@@ -20,6 +20,7 @@ class CommentResponse(BaseModel):
     c_user: int
     c_post: int
     nickname: str
+    profile_image_url: str | None = None
     c_created_at: datetime
 
     class Config:
