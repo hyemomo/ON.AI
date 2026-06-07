@@ -1,5 +1,8 @@
 # 지역 선택 시 계층형 목록
 REGION_OPTIONS = {
+    # 게시글 작성 한정으로 허용
+    "전국": [],
+
     # 특별시
     "서울시": [
         "종로구", "중구", "용산구", "성동구", "광진구",
@@ -127,7 +130,7 @@ ALLOWED_SORT_OPTIONS = [
 ]
 
 # 인기 게시글 기준 기간
-POPULAR_PERIOD_DAYS = 7
+POPULAR_PERIOD_DAYS = 30
 
 # 유저 관심사 허용 목록
 INTEREST_CATEGORIES = {

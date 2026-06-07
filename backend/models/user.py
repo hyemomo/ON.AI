@@ -25,6 +25,7 @@ class User(Base):
     # 추가 계정 정보
     email = Column(String(100), nullable=False, unique=True)
     region = Column(String(50), nullable=False)
+    profile_image_url = Column(String(255), nullable=True)
 
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 

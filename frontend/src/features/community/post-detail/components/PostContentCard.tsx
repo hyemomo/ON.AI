@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Avatar,
   Badge,
   Box,
@@ -10,179 +11,228 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import React from "react";
-import MDEditor from "@uiw/react-md-editor";
-import { text, border } from "@/tokens/color";
 import {
+  IconEdit,
   IconHeart,
-  IconHeartFilled,
   IconMessageCircle,
+  IconTrash,
 } from "@tabler/icons-react";
+import { useNavigate } from "react-router-dom";
+import { formatDateTime, toStaticUrl } from "@/lib/api";
 import type { Post } from "@/features/community/post-detail/types/types";
-import { useLocation, useNavigate } from "react-router-dom";import { usePostLike } from "@/features/community/hooks/usePostLike";
+import { border, shadow, surface, text } from "@/tokens/color";
 
-const getImageUrl = (url: string) => {
-  if (url.startsWith("http")) {
-    return url;
-  }
-
-  return `http://127.0.0.1:8000${url}`;
-};
-
-const PostContentCard = ({
-  post,
-  commentCount,
-}: {
+type PostContentCardProps = {
   post: Post;
   commentCount?: number;
-}) => {
-  const location = useLocation();
+  currentUsernum?: number;
+  onDelete?: (postnum: number) => void | Promise<void>;
+};
 
-  const isCommunityListPage = location.pathname === "/community";
-  const imageUrls = post.image_urls ?? [];
-
-  const { liked, likeCount, toggleLike } = usePostLike({
-    postnum: post.postnum,
-    initialLiked: post.is_liked,
-    initialLikeCount: post.like_count,
-  });
-
+export default function PostContentCard({
+  post,
+  commentCount,
+  currentUsernum,
+  onDelete,
+}: PostContentCardProps) {
   const navigate = useNavigate();
 
-  const handleToggleLike = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    toggleLike();
-  };
-
-  const handleClickCard = () => {
-    navigate(`/community/posts/${post.postnum}`);
-  };
+  const isOwner = currentUsernum === post.p_user;
+  const displayCommentCount = commentCount ?? post.comment_count ?? 0;
+  const profileImageSrc = toStaticUrl(post.profile_image_url);
 
   return (
     <Card
-      onClick={handleClickCard}
-      p="lg"
+      p="xl"
+      radius="xl"
       withBorder
       style={{
-        cursor: "pointer",
+        background: surface.white,
         borderColor: border.default,
+        boxShadow: shadow.card,
       }}
     >
-      {/* 헤더 */}
-      <Group justify="space-between" mb="sm">
-        <Group gap="sm">
-          <Avatar
-            radius="xl"
-            size={38}
-            style={{ border: `1.5px solid ${border.default}` }}
-          >
-            {post.nickname?.[0] ?? "?"}
-          </Avatar>
-
-          <Stack gap={2}>
-            <Text size="sm" fw={600} c={text.primary}>
-              {post.nickname}
-            </Text>
-
-            <Text size="xs" c={text.muted}>
-              {post.p_region_tag} · {post.p_created_at}
-            </Text>
-          </Stack>
-        </Group>
-
-        <Badge size="sm" color="coral" variant="light">
-          {post.p_category_tag}
-        </Badge>
-      </Group>
-
-      {/* 제목 */}
-      <Text
-        fw={600}
-        size="md"
-        mb={6}
-        c={text.primary}
-        style={{ lineHeight: 1.45, letterSpacing: "-0.15px" }}
-      >
-        {post.p_title}
-      </Text>
-
-      {/* 본문 - 상세 페이지에서만 표시 */}
-      {!isCommunityListPage && (
-        <Box
-          data-color-mode="light"
-          mb="sm"
-          style={{
-            color: text.secondary,
-            fontSize: 14,
-            fontWeight: 300,
-            lineHeight: 1.7,
-          }}
-        >
-          <MDEditor.Markdown source={post.p_content} />
-        </Box>
-      )}
-
-      {/* 이미지 */}
-      {imageUrls.length > 0 && (
-        <Group gap="xs" mb="sm">
-          {imageUrls.map((imageUrl, index) => (
-            <Box
-              key={`${imageUrl}-${index}`}
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start">
+          <Group gap="sm" align="center">
+            <Avatar
+              src={profileImageSrc}
+              radius="xl"
+              size={44}
+              color="coral"
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: 12,
-                overflow: "hidden",
-                border: `1px solid ${border.default}`,
+                border: `1.5px solid ${border.default}`,
+                flexShrink: 0,
               }}
             >
-              <Image
-                src={getImageUrl(imageUrl)}
-                alt={`게시글 이미지 ${index + 1}`}
-                w={80}
-                h={80}
-                fit="cover"
-              />
-            </Box>
-          ))}
+              {post.nickname?.[0] ?? "?"}
+            </Avatar>
+
+            <Stack gap={2}>
+              <Text fw={800} c={text.primary}>
+                {post.nickname || "알 수 없음"}
+              </Text>
+
+              <Group gap={6}>
+                <Text size="xs" c={text.muted}>
+                  {formatDateTime(post.p_created_at)}
+                </Text>
+
+                <Text size="xs" c={text.muted}>
+                  ·
+                </Text>
+
+                <Text size="xs" c={text.muted}>
+                  {post.p_region_tag}
+                </Text>
+              </Group>
+            </Stack>
+          </Group>
+
+          {isOwner && (
+            <Group gap={4}>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                radius="xl"
+                onClick={() =>
+                  navigate(`/community/posts/${post.postnum}/edit`)
+                }
+              >
+                <IconEdit size={16} color={text.muted} />
+              </ActionIcon>
+
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                radius="xl"
+                onClick={() => void onDelete?.(post.postnum)}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Group>
+          )}
         </Group>
-      )}
 
-      <Divider color={border.default} mb="sm" />
+        <Group gap="xs">
+          <Badge color="coral" variant="light">
+            {post.p_category_tag}
+          </Badge>
 
-      {/* 액션 */}
-      <Group gap="xs">
-        <Button
-          variant="subtle"
-          size="xs"
-          color={liked ? "coral" : "gray"}
-          leftSection={
-            liked ? <IconHeartFilled size={14} /> : <IconHeart size={14} />
-          }
-          onClick={handleToggleLike}
-          style={{ fontWeight: 500 }}
+          <Badge color="gray" variant="light">
+            {post.p_region_tag}
+          </Badge>
+        </Group>
+
+        <Box
+          onClick={() => navigate(`/community/posts/${post.postnum}`)}
+          style={{ cursor: "pointer" }}
         >
-          {likeCount}
-        </Button>
+          <Stack gap="sm">
+            <Text fw={800} size="lg" c={text.primary} lh={1.35}>
+              {post.p_title}
+            </Text>
 
-        <Button
-          variant="subtle"
-          size="xs"
-          color="gray"
-          leftSection={<IconMessageCircle size={14} />}
-          style={{ fontWeight: 500, color: text.muted }}
-        >
-          {commentCount ?? post.comment_count}
-        </Button>
+            <Text
+              size="sm"
+              c={text.secondary}
+              style={{
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.7,
+                display: "-webkit-box",
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {post.p_content}
+            </Text>
+          </Stack>
+        </Box>
 
-        <Box style={{ flex: 1 }} />
+        {post.image_urls?.length > 0 && (
+          <Group gap="xs" wrap="wrap">
+            {post.image_urls.slice(0, 3).map((imageUrl, index) => (
+              <Box
+                key={`${imageUrl}-${index}`}
+                style={{
+                  width: 112,
+                  height: 112,
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  border: `1px solid ${border.default}`,
+                  background: surface.subtle,
+                  position: "relative",
+                }}
+              >
+                <Image
+                  src={toStaticUrl(imageUrl)}
+                  alt="게시글 이미지"
+                  width={112}
+                  height={112}
+                  fit="cover"
+                />
 
-        <Text size="xs" c={text.muted}>
-          작성자 #{post.p_user}
-        </Text>
-      </Group>
+                {index === 2 && post.image_urls.length > 3 && (
+                  <Box
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(0,0,0,0.45)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text c="white" fw={800}>
+                      +{post.image_urls.length - 3}
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Group>
+        )}
+
+        <Divider color={border.default} />
+
+        <Group justify="space-between">
+          <Group gap="xs">
+            <Button
+              variant="subtle"
+              color="coral"
+              radius="xl"
+              size="xs"
+              leftSection={<IconHeart size={14} />}
+            >
+              {post.like_count ?? 0}
+            </Button>
+
+            <Button
+              variant="subtle"
+              color="gray"
+              radius="xl"
+              size="xs"
+              leftSection={<IconMessageCircle size={14} />}
+            >
+              {displayCommentCount}
+            </Button>
+          </Group>
+
+          <Button
+            size="xs"
+            radius="xl"
+            variant="light"
+            color="coral"
+            onClick={() => navigate(`/community/posts/${post.postnum}`)}
+            style={{
+              boxShadow: shadow.card,
+            }}
+          >
+            자세히 보기
+          </Button>
+        </Group>
+      </Stack>
     </Card>
   );
-};
-
-export default PostContentCard;
+}

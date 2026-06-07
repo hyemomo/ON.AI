@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 interface UsePostLikeProps {
   postnum: number;
@@ -14,8 +15,6 @@ export const usePostLike = ({
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
 
-  const token = localStorage.getItem("access_token");
-
   const toggleLike = async () => {
     const prevLiked = liked;
     const prevLikeCount = likeCount;
@@ -26,19 +25,9 @@ export const usePostLike = ({
     setLikeCount(nextLiked ? prevLikeCount + 1 : prevLikeCount - 1);
 
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/community/posts/${postnum}/likes`,
-        {
-          method: nextLiked ? "POST" : "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("좋아요 처리 실패");
-      }
+      await apiFetch(`/community/posts/${postnum}/likes`, {
+        method: nextLiked ? "POST" : "DELETE",
+      });
     } catch (error) {
       console.error(error);
 

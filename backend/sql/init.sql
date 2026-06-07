@@ -191,3 +191,10 @@ CREATE TABLE IF NOT EXISTS CHAT_MESSAGES (
     CONSTRAINT fk_chat_messages_sender
         FOREIGN KEY (sender_usernum) REFERENCES USERS(usernum)
 );
+
+# 프로필 사진 기능 추가 (이미 테이블을 생성했다면)
+ALTER TABLE USERS
+ADD COLUMN profile_image_url VARCHAR(255) NULL;
+
+# 만약, USERS 테이블을 생성하기 전이라면, 
+# profile_image_url VARCHAR(255)을 USERS 테이블 생성 쿼리문에 추가해주세요.

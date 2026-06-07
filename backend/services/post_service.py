@@ -91,6 +91,7 @@ def get_all_posts(
         db.query(
             Post,
             User.nickname,
+            User.profile_image_url,
             func.count(Comment.commentnum.distinct()).label("comment_count"),
             func.count(PostLike.likenum.distinct()).label("like_count")
         )
@@ -117,7 +118,8 @@ def get_all_posts(
         Post.p_region_tag,
         Post.p_category_tag,
         Post.p_created_at,
-        User.nickname
+        User.nickname,
+        User.profile_image_url
     )
 
     if sort == "comments":
@@ -142,7 +144,7 @@ def get_all_posts(
 
     result = []
 
-    for post, nickname, comment_count, like_count in posts:
+    for post, nickname, profile_image_url, comment_count, like_count in posts:
         is_liked = (
             db.query(PostLike)
             .filter(
@@ -164,6 +166,7 @@ def get_all_posts(
             "p_content": post.p_content,
             "p_user": post.p_user,
             "nickname": nickname,
+            "profile_image_url": profile_image_url,
             "p_region_tag": post.p_region_tag,
             "p_category_tag": post.p_category_tag,
             "p_created_at": post.p_created_at,
@@ -182,6 +185,7 @@ def get_post_by_id(db: Session, postnum: int, usernum: int):
         db.query(
             Post,
             User.nickname,
+            User.profile_image_url,
             func.count(Comment.commentnum.distinct()).label("comment_count"),
             func.count(PostLike.likenum.distinct()).label("like_count")
         )
@@ -197,7 +201,8 @@ def get_post_by_id(db: Session, postnum: int, usernum: int):
             Post.p_region_tag,
             Post.p_category_tag,
             Post.p_created_at,
-            User.nickname
+            User.nickname,
+            User.profile_image_url
         )
         .first()
     )
@@ -208,7 +213,7 @@ def get_post_by_id(db: Session, postnum: int, usernum: int):
             detail="게시글이 없습니다."
         )
 
-    post, nickname, comment_count, like_count = result
+    post, nickname, profile_image_url, comment_count, like_count = result
 
     is_liked = (
         db.query(PostLike)
@@ -231,6 +236,7 @@ def get_post_by_id(db: Session, postnum: int, usernum: int):
         "p_content": post.p_content,
         "p_user": post.p_user,
         "nickname": nickname,
+        "profile_image_url": profile_image_url,
         "p_region_tag": post.p_region_tag,
         "p_category_tag": post.p_category_tag,
         "p_created_at": post.p_created_at,
