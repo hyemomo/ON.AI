@@ -36,7 +36,7 @@ backend/keys/
 # data debug / local vector DB
 crawler/data/debug/*
 crawler/data/raw/*
-crawler/data/processed/*
+# crawler/data/processed/*  # 팀원 ChromaDB 재구성을 위해 포함
 crawler/data/chunks/*
 crawler/data/chroma/*
 

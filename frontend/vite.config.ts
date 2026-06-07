@@ -17,6 +17,9 @@ export default defineConfig({
       "/mypage": "http://localhost:8000",
       "/auth": "http://localhost:8000",
       "/community": "http://localhost:8000",
+      "/matching": "http://localhost:8000",
+      "/chats": "http://localhost:8000",
+      "/static": "http://localhost:8000",
     },
   },
 });
