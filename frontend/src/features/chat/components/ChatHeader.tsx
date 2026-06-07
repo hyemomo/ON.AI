@@ -1,102 +1,57 @@
-import { useBackNavigation } from "@/hooks/useBackNavigation";
-import {
-  ActionIcon,
-  Avatar,
-  Badge,
-  Box,
-  Group,
-  Indicator,
-  Text,
-} from "@mantine/core";
-import {
-  IconChevronLeft,
-  IconDotsVertical,
-  IconUser,
-} from "@tabler/icons-react";
+import { Avatar, Badge, Box, Group, Stack, Text } from "@mantine/core";
+import { IconMessageCircleHeart } from "@tabler/icons-react";
+import { border, coralScale, surface, text } from "@/tokens/color";
 
-const ChatHeader = () => {
-  const {handleBack}= useBackNavigation({  fallbackPath : "/"
-})
+export default function ChatHeader() {
   return (
-    <Group
-      h={64}
-      px={16}
-      gap={10}
-      bg="#fff"
+    <Box
+      px="lg"
+      py="md"
       style={{
-        borderBottom: "1px solid #FFE4E7",
-        flexShrink: 0,
+        background: surface.white,
+        borderBottom: `1px solid ${border.default}`,
       }}
     >
-      <ActionIcon
-        variant="light"
-        radius="xl"
-        size={36}
-        color="pink"
-        onClick={handleBack}
-        aria-label="뒤로가기"
-        styles={{
-          root: {
-            border: "1.5px solid #FFE4E7",
-            backgroundColor: "#FFF0F2",
-          },
-        }}
-      >
-        <IconChevronLeft size={19} color="#E84D5C" />
-      </ActionIcon>
+      <Group justify="space-between" align="center">
+        <Group gap="sm">
+          <Avatar
+            radius="xl"
+            color="coral"
+            size={44}
+            style={{
+              border: `1.5px solid ${border.default}`,
+            }}
+          >
+            <IconMessageCircleHeart size={24} />
+          </Avatar>
 
-      <Indicator
-        color="green"
-        size={11}
-        offset={4}
-        position="bottom-end"
-        withBorder
-      >
-        <Avatar
-          size={42}
-          radius="xl"
-          styles={{
-            root: {
-              background: "linear-gradient(135deg, #FF8E9B, #E84D5C)",
-              boxShadow: "0 3px 10px rgba(255, 107, 122, 0.3)",
-            },
+          <Stack gap={2}>
+            <Group gap="xs">
+              <Text fw={800} size="md" c={text.primary}>
+                ON.AI 챗봇
+              </Text>
+
+              <Badge color="coral" variant="light" size="sm">
+                AI 상담
+              </Badge>
+            </Group>
+
+            <Text size="xs" c={text.muted}>
+              육아 고민을 편하게 이야기해보세요.
+            </Text>
+          </Stack>
+        </Group>
+
+        <Box
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: "50%",
+            background: coralScale[5],
+            boxShadow: "0 0 0 4px rgba(255, 111, 118, 0.14)",
           }}
-        >
-          <IconUser size={24} color="white" />
-        </Avatar>
-      </Indicator>
-
-      <Box style={{ flex: 1, minWidth: 0 }}>
-        <Text size="sm" fw={700} c="#2D1A1E">
-          ON.AI 도우미
-        </Text>
-
-        <Badge
-          size="xs"
-          radius="xl"
-          color="green"
-          variant="light"
-          styles={{
-            root: {
-              border: "1px solid #A0E8BC",
-            },
-          }}
-        >
-          온라인
-        </Badge>
-      </Box>
-
-      <ActionIcon
-        variant="subtle"
-        radius="xl"
-        size={36}
-        color="pink"
-        aria-label="더보기"
-      >
-        <IconDotsVertical size={19} color="#C4909A" />
-      </ActionIcon>
-    </Group>
+        />
+      </Group>
+    </Box>
   );
-};
-
-export default ChatHeader;
+}

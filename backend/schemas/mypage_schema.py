@@ -44,6 +44,7 @@ class MyPageResponse(BaseModel):
 
     email: str
     region: str
+    profile_image_url: str | None = None
     created_at: datetime
 
     children: list[ChildResponse] = []
@@ -85,3 +86,9 @@ class InterestRegionsUpdateRequest(BaseModel):
 # 관심사 목록 수정 요청
 class InterestsUpdateRequest(BaseModel):
     interests: list[str]
+
+
+# 프로필 이미지 수정 응답
+class ProfileImageUpdateResponse(BaseModel):
+    message: str
+    profile_image_url: str

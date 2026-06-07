@@ -101,8 +101,8 @@ const ChatPage = () => {
     lastMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const sendMessage = (text: string) => {
-    const trimmedText = text.trim();
+  const sendMessage = (messageText: string) => {
+    const trimmedText = messageText.trim();
     if (!trimmedText) return;
 
     const userMessage: ChatMessage = {
@@ -166,9 +166,8 @@ const ChatPage = () => {
     scrollToBottom();
   }, [mode, policyCategory]);
 
-  const selectedPolicyCategoryLabel = POLICY_CATEGORY_OPTIONS.find(
-    (o) => o.value === policyCategory
-  )?.label ?? "전체";
+  const selectedPolicyCategoryLabel =
+    POLICY_CATEGORY_OPTIONS.find((o) => o.value === policyCategory)?.label ?? "전체";
 
   return (
     <Box
@@ -234,7 +233,6 @@ const ChatPage = () => {
                       root: {
                         borderColor: opt.color,
                         color: opt.color,
-                        "&:hover": { backgroundColor: `${opt.color}15` },
                       },
                     }}
                   >
@@ -245,7 +243,7 @@ const ChatPage = () => {
             </Box>
           )}
 
-          {/* 2단계: 복지정책 선택 시 서브 카테고리 선택 */}
+          {/* 2단계: 복지정책 선택 시 서브 카테고리 */}
           {mode === "policy" && policyCategory === null && !isTyping && (
             <Box pl={44}>
               <Text size="xs" c="#C4909A" mb={8}>
@@ -263,7 +261,6 @@ const ChatPage = () => {
                       root: {
                         borderColor: "#4A90E2",
                         color: "#4A90E2",
-                        "&:hover": { backgroundColor: "#4A90E215" },
                       },
                     }}
                   >
@@ -320,4 +317,5 @@ const ChatPage = () => {
     </Box>
   );
 };
+
 export default ChatPage;
