@@ -1,6 +1,10 @@
-python-dotenv
 fastapi
-uvicorn
+uvicorn[standard]
+chromadb
+sentence-transformers
+google-generativeai
+python-dotenv
+langgraph
 sqlalchemy
 pymysql
 passlib[bcrypt]
@@ -10,4 +14,3 @@ python-jose[cryptography]
 python-multipart
 black
 isort
-sentence-transformers

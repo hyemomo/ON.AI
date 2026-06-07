@@ -1,38 +1,104 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Box,
-  Card,
-  Container,
-  Divider,
-  ScrollArea,
-  Stack,
-} from "@mantine/core";
-import AppLayout from "@/components/AppLayout";
-import type { ChatMessage } from "@/features/chat/types/chat.type";
-import { aiReplies, initialMessages } from "@/features/chat/mocks/chat.mock";
+import { Box, Button, Divider, Group, ScrollArea, Stack, Text } from "@mantine/core";
+
+import type { ChatMessage, ChatMode } from "@/features/chat/types/chat.type";
+import { initialMessages } from "@/features/chat/mocks/chat.mock";
+import { sendChatMessage } from "@/features/chat/api/chatApi";
 import { createMessageId } from "@/features/chat/utils/createMessageId";
 import { getCurrentTime } from "@/features/chat/utils/formatChatTime";
 import MessageBubble from "@/features/chat/components/MessageBubble";
 import ChatHeader from "@/features/chat/components/ChatHeader";
 import TypingIndicator from "@/features/chat/components/TypingIndicator";
 import ChatInput from "@/features/chat/components/ChatInput";
-import { border, surface } from "@/tokens/color";
 
-export default function ChatPage() {
+const MODE_OPTIONS: { mode: ChatMode; label: string; icon: string; color: string }[] = [
+  { mode: "policy",     label: "복지정책",  icon: "📋", color: "#4A90E2" },
+  { mode: "parenting",  label: "육아방법",  icon: "👶", color: "#5CB85C" },
+  { mode: "first_aid",  label: "응급처치",  icon: "🚑", color: "#E84D5C" },
+  { mode: "counseling", label: "상담",      icon: "💬", color: "#9B59B6" },
+];
+
+const POLICY_CATEGORY_OPTIONS: { value: string; label: string; icon: string }[] = [
+  { value: "임신출산", label: "임신출산", icon: "🤰" },
+  { value: "양육돌봄", label: "양육돌봄", icon: "👶" },
+  { value: "시설주거", label: "시설주거", icon: "🏠" },
+  { value: "교육취업", label: "교육취업", icon: "💼" },
+  { value: "금융법률", label: "금융법률", icon: "⚖️" },
+  { value: "생활편의", label: "생활편의", icon: "🎫" },
+];
+
+interface UserProfile {
+  parents_name?: string;
+  region?: string;
+  parents_mbti?: string | null;
+  children?: { child_birth: string; child_gender: string }[];
+  interests?: { interest_name: string }[];
+}
+
+function calcAge(birthStr: string): number {
+  const today = new Date();
+  const birth = new Date(birthStr);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+function buildUserContext(profile: UserProfile, mode: string): string {
+  const lines: string[] = [];
+
+  if (profile.parents_name) lines.push(`사용자 이름: ${profile.parents_name}`);
+
+  if ((mode === "policy" || mode === "first_aid" || mode === "") && profile.region)
+    lines.push(`거주 지역: ${profile.region}`);
+
+  if (["policy", "parenting", "first_aid", ""].includes(mode) && profile.children?.length) {
+    const childDesc = profile.children
+      .map((c) => `만 ${calcAge(c.child_birth)}세 ${c.child_gender}`)
+      .join(", ");
+    lines.push(`자녀: ${childDesc}`);
+  }
+
+  if (mode === "counseling") {
+    if (profile.parents_mbti) lines.push(`MBTI: ${profile.parents_mbti}`);
+    if (profile.interests?.length)
+      lines.push(`관심사: ${profile.interests.map((i) => i.interest_name).join(", ")}`);
+  }
+
+  return lines.join(" / ");
+}
+
+const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [mode, setMode] = useState<ChatMode | null>(null);
+  const [policyCategory, setPolicyCategory] = useState<string | null>(null);
+  const [modeStartIndex, setModeStartIndex] = useState(0);
+  const [userProfile, setUserProfile] = useState<UserProfile>({});
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch("/mypage/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => setUserProfile(data))
+      .catch(() => {});
+  }, []);
 
   const viewportRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     const viewport = viewportRef.current;
     if (!viewport) return;
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+  };
 
-    viewport.scrollTo({
-      top: viewport.scrollHeight,
-      behavior: "smooth",
-    });
+  const scrollToLastMessage = () => {
+    lastMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const sendMessage = (messageText: string) => {
@@ -50,128 +116,206 @@ export default function ChatPage() {
     setInputValue("");
     setIsTyping(true);
 
-    window.setTimeout(() => {
-      const randomReply =
-        aiReplies[Math.floor(Math.random() * aiReplies.length)];
-
-      const aiMessage: ChatMessage = {
-        id: createMessageId(),
-        role: "ai",
-        content: randomReply,
-        time: getCurrentTime(),
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1200);
+    sendChatMessage(
+      trimmedText,
+      messages.slice(modeStartIndex),
+      mode ?? "",
+      mode === "policy" ? (policyCategory ?? "") : "",
+      buildUserContext(userProfile, mode ?? "")
+    )
+      .then(({ reply, category, is_fallback, sources }) => {
+        const aiMessage: ChatMessage = {
+          id: createMessageId(),
+          role: "ai",
+          content: reply,
+          time: getCurrentTime(),
+          category,
+          is_fallback,
+          sources,
+        };
+        setMessages((cur) => [...cur, aiMessage]);
+      })
+      .catch(() => {
+        const errorMessage: ChatMessage = {
+          id: createMessageId(),
+          role: "ai",
+          content: "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+          time: getCurrentTime(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      })
+      .finally(() => {
+        setIsTyping(false);
+      });
   };
 
-  const handleSubmit = () => {
-    sendMessage(inputValue);
+  const handleSubmit = (overrideValue?: string) => {
+    sendMessage(overrideValue ?? inputValue);
   };
 
   useEffect(() => {
-    scrollToBottom();
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === "ai") {
+      scrollToLastMessage();
+    } else {
+      scrollToBottom();
+    }
   }, [messages, isTyping]);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [mode, policyCategory]);
+
+  const selectedPolicyCategoryLabel =
+    POLICY_CATEGORY_OPTIONS.find((o) => o.value === policyCategory)?.label ?? "전체";
+
   return (
-    <AppLayout>
-      <Box
-        style={{
-          height: "calc(100vh - 134px)",
-          background: surface.bg,
-          overflow: "hidden",
+    <Box
+      h="100dvh"
+      bg="#FFF8F8"
+      style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}
+    >
+      <ChatHeader />
+
+      <ScrollArea
+        viewportRef={viewportRef}
+        style={{ flex: 1 }}
+        styles={{
+          viewport: {
+            padding: "14px 14px 8px",
+            background:
+              "radial-gradient(ellipse at top right, rgba(255,174,179,.12) 0%, transparent 55%), radial-gradient(ellipse at bottom left, rgba(255,214,218,.15) 0%, transparent 55%), #FFF8F8",
+          },
+          scrollbar: { display: "none" },
         }}
       >
-        <Container
-          size="sm"
-          h="100%"
-          py="md"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          <Card
-            p={0}
-            radius="xl"
-            withBorder
-            style={{
-              flex: 1,
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              background: "#FFF8F8",
-              borderColor: border.default,
+        <Stack gap={10}>
+          <Divider
+            label="오늘"
+            labelPosition="center"
+            styles={{
+              label: {
+                color: "#C4909A",
+                backgroundColor: "rgba(255, 228, 231, 0.8)",
+                border: "1px solid #FFE4E7",
+                borderRadius: 999,
+                padding: "3px 12px",
+                fontSize: 11,
+              },
             }}
-          >
-            <Box style={{ flexShrink: 0 }}>
-              <ChatHeader />
-            </Box>
+          />
 
-            <ScrollArea
-              viewportRef={viewportRef}
-              style={{
-                flex: 1,
-                minHeight: 0,
-              }}
-              styles={{
-                root: {
-                  flex: 1,
-                  minHeight: 0,
-                },
-                viewport: {
-                  padding: "14px 14px 8px",
-                  background:
-                    "radial-gradient(ellipse at top right, rgba(255,174,179,.12) 0%, transparent 55%), radial-gradient(ellipse at bottom left, rgba(255,214,218,.15) 0%, transparent 55%), #FFF8F8",
-                },
-                scrollbar: {
-                  display: "none",
-                },
-              }}
-            >
-              <Stack gap={10}>
-                <Divider
-                  label="오늘"
-                  labelPosition="center"
-                  styles={{
-                    label: {
-                      color: "#C4909A",
-                      backgroundColor: "rgba(255, 228, 231, 0.8)",
-                      border: "1px solid #FFE4E7",
-                      borderRadius: 999,
-                      padding: "3px 12px",
-                      fontSize: 11,
-                    },
-                  }}
-                />
+          {messages.map((message, index) => (
+            <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
+              <MessageBubble message={message} />
+            </div>
+          ))}
 
-                {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
+          {/* 1단계: 모드 선택 */}
+          {!mode && !isTyping && (
+            <Box pl={44}>
+              <Text size="xs" c="#C4909A" mb={8}>
+                어떤 도움이 필요하신가요?
+              </Text>
+              <Group gap={8} wrap="wrap">
+                {MODE_OPTIONS.map((opt) => (
+                  <Button
+                    key={opt.mode}
+                    size="xs"
+                    variant="outline"
+                    radius="xl"
+                    onClick={() => {
+                      setMode(opt.mode);
+                      setPolicyCategory(null);
+                      setModeStartIndex(messages.length);
+                    }}
+                    styles={{
+                      root: {
+                        borderColor: opt.color,
+                        color: opt.color,
+                      },
+                    }}
+                  >
+                    {opt.icon} {opt.label}
+                  </Button>
                 ))}
-
-                {isTyping && <TypingIndicator />}
-              </Stack>
-            </ScrollArea>
-
-            <Box
-              style={{
-                flexShrink: 0,
-                borderTop: `1px solid ${border.default}`,
-                background: "rgba(255,255,255,0.95)",
-              }}
-            >
-              <ChatInput
-                inputValue={inputValue}
-                setInputValue={setInputValue}
-                handleSubmit={handleSubmit}
-              />
+              </Group>
             </Box>
-          </Card>
-        </Container>
-      </Box>
-    </AppLayout>
+          )}
+
+          {/* 2단계: 복지정책 선택 시 서브 카테고리 */}
+          {mode === "policy" && policyCategory === null && !isTyping && (
+            <Box pl={44}>
+              <Text size="xs" c="#C4909A" mb={8}>
+                📋 어떤 분야의 정책이 궁금하신가요?
+              </Text>
+              <Group gap={8} wrap="wrap">
+                {POLICY_CATEGORY_OPTIONS.map((opt) => (
+                  <Button
+                    key={opt.value}
+                    size="xs"
+                    variant="outline"
+                    radius="xl"
+                    onClick={() => setPolicyCategory(opt.value)}
+                    styles={{
+                      root: {
+                        borderColor: "#4A90E2",
+                        color: "#4A90E2",
+                      },
+                    }}
+                  >
+                    {opt.icon} {opt.label}
+                  </Button>
+                ))}
+              </Group>
+            </Box>
+          )}
+
+          {/* 선택된 모드 + 카테고리 표시 */}
+          {mode && (mode !== "policy" || policyCategory !== null) && !isTyping && (
+            <Box pl={44}>
+              <Group gap={6} align="center">
+                <Text size="xs" c="#C4909A">
+                  {MODE_OPTIONS.find((o) => o.mode === mode)?.icon}{" "}
+                  <strong>{MODE_OPTIONS.find((o) => o.mode === mode)?.label}</strong>
+                  {mode === "policy" && policyCategory !== null && (
+                    <> · <strong>{selectedPolicyCategoryLabel}</strong></>
+                  )}
+                  {" "}모드로 답변드릴게요
+                </Text>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="gray"
+                  radius="xl"
+                  p={4}
+                  h="auto"
+                  onClick={() => {
+                    setMode(null);
+                    setPolicyCategory(null);
+                    setModeStartIndex(messages.length);
+                  }}
+                  style={{ fontSize: 11 }}
+                >
+                  새 대화
+                </Button>
+              </Group>
+            </Box>
+          )}
+
+          {isTyping && <TypingIndicator />}
+        </Stack>
+      </ScrollArea>
+
+      <ChatInput
+        inputValue={inputValue}
+        setInputValue={setInputValue}
+        handleSubmit={handleSubmit}
+        isLoading={isTyping}
+        placeholder={!mode ? "모드를 선택하거나 바로 질문하세요..." : undefined}
+      />
+    </Box>
   );
-}
+};
+
+export default ChatPage;

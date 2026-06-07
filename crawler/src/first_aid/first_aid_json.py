@@ -5,7 +5,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[2]  # crawler/
 RAW_PATH = BASE_DIR / "data" / "raw" / "first_aid.txt"
-OUT_DIR = BASE_DIR / "data" / "chunks"
+OUT_DIR = BASE_DIR / "data" / "processed" / "first_aid"
 OUT_PATH = OUT_DIR / "first_aid_chunks.json"
 
 

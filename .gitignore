@@ -25,12 +25,28 @@ build/
 .vscode/
 .idea/
 
+# environment variables
+*.env
+.env
+
+# Google Cloud 서비스 계정 키
+backend/keys/
+
 # data debug / local vector DB
 crawler/data/debug/*
 crawler/data/raw/*
-crawler/data/processed/*
+# crawler/data/processed/*  # 팀원 ChromaDB 재구성을 위해 포함
 crawler/data/chunks/*
 crawler/data/chroma/*
 
 # Environment variables
 backend/.env
+
+# RAG 평가 스크립트 및 결과 (로컬 전용)
+backend/evaluate_rag.py
+backend/evaluate_recall.py
+backend/visualize_ragas.py
+backend/ragas_result.png
+backend/compare_distances.py
+backend/RAG_EVALUATION.md
+ARCHITECTURE_SCRIPT.md
