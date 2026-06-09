@@ -98,6 +98,7 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
             >
               {message.category}
             </Badge>
+
             {message.is_fallback && (
               <Badge size="xs" variant="outline" color="orange">
                 일반 정보
@@ -148,4 +149,5 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
     </Group>
   );
 };
+
 export default MessageBubble;

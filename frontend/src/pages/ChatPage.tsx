@@ -66,7 +66,10 @@ function calcAge(birthStr: string): number {
   let age = today.getFullYear() - birth.getFullYear();
   const monthDiff = today.getMonth() - birth.getMonth();
 
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birth.getDate())
+  ) {
     age--;
   }
 
@@ -92,9 +95,7 @@ function buildUserContext(profile: UserProfile, mode: string): string {
     profile.children?.length
   ) {
     const childDesc = profile.children
-      .map(
-        (child) => `만 ${calcAge(child.child_birth)}세 ${child.child_gender}`,
-      )
+      .map((child) => `만 ${calcAge(child.child_birth)}세 ${child.child_gender}`)
       .join(", ");
 
     lines.push(`자녀: ${childDesc}`);
@@ -468,10 +469,7 @@ const ChatPage = () => {
                 <Box pl={44}>
                   <Group gap={6} align="center">
                     <Text size="xs" c="#C4909A">
-                      {
-                        MODE_OPTIONS.find((option) => option.mode === mode)
-                          ?.icon
-                      }{" "}
+                      {MODE_OPTIONS.find((option) => option.mode === mode)?.icon}{" "}
                       <strong>
                         {
                           MODE_OPTIONS.find((option) => option.mode === mode)
@@ -512,9 +510,7 @@ const ChatPage = () => {
           setInputValue={setInputValue}
           handleSubmit={handleSubmit}
           isLoading={isTyping}
-          placeholder={
-            !mode ? "모드를 선택하거나 바로 질문하세요..." : undefined
-          }
+          placeholder={!mode ? "모드를 선택하거나 바로 질문하세요..." : undefined}
         />
       </Box>
     </AppLayout>
