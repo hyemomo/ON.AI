@@ -1,5 +1,6 @@
-import { API_BASE_URL } from "@/lib/api";
 import type { ChatMessage, Source } from "../types/chat.type";
+
+const BASE_URL = "/api";
 
 export type { Source };
 
@@ -16,10 +17,12 @@ interface HistoryMessage {
 }
 
 function buildHistory(messages: ChatMessage[]): HistoryMessage[] {
+  // initial- ID 메시지(초기 AI 인사말) 제외
   const filtered = messages.filter(
     (message) => !message.id.startsWith("initial-"),
   );
 
+  // user 메시지부터 시작하도록 앞부분 자르기 (Gemini API 요구사항)
   const startIndex = filtered.findIndex((message) => message.role === "user");
 
   if (startIndex === -1) return [];
@@ -37,7 +40,7 @@ export async function sendChatMessage(
   policyCategory: string = "",
   userContext: string = "",
 ): Promise<ChatApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/chat`, {
+  const response = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

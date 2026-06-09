@@ -2,8 +2,6 @@ import { useCallback, useRef, useState } from "react";
 import { ActionIcon, Box, Group, Textarea } from "@mantine/core";
 import { IconArrowRight, IconMicrophone } from "@tabler/icons-react";
 
-import { API_BASE_URL } from "@/lib/api";
-
 interface ChatInputProps {
   inputValue: string;
   setInputValue: (value: string) => void;
@@ -11,6 +9,8 @@ interface ChatInputProps {
   isLoading?: boolean;
   placeholder?: string;
 }
+
+const BASE_URL = "/api";
 
 const ChatInput = ({
   inputValue,
@@ -24,6 +24,7 @@ const ChatInput = ({
   const chunksRef = useRef<Blob[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // 한글 IME 문제 대응: 버튼 클릭 시 DOM 실제 값을 직접 전달
   const handleSubmitWithIME = () => {
     const domValue = (textareaRef.current?.value ?? inputValue).trim();
 
@@ -64,7 +65,7 @@ const ChatInput = ({
         formData.append("audio", blob, "recording.webm");
 
         try {
-          const response = await fetch(`${API_BASE_URL}/api/stt`, {
+          const response = await fetch(`${BASE_URL}/stt`, {
             method: "POST",
             body: formData,
           });
