@@ -1,5 +1,5 @@
-import { Avatar, Badge, Box, Group, Stack, Text } from "@mantine/core";
-import { IconMessageCircleHeart } from "@tabler/icons-react";
+import { Badge, Box, Group, Stack, Text } from "@mantine/core";
+import ChatAvatar from "@/features/chat/components/chatAvatar";
 import { border, coralScale, surface, text } from "@/tokens/color";
 
 export default function ChatHeader() {
@@ -14,16 +14,7 @@ export default function ChatHeader() {
     >
       <Group justify="space-between" align="center">
         <Group gap="sm">
-          <Avatar
-            radius="xl"
-            color="coral"
-            size={44}
-            style={{
-              border: `1.5px solid ${border.default}`,
-            }}
-          >
-            <IconMessageCircleHeart size={24} />
-          </Avatar>
+          <ChatAvatar size={46} />
 
           <Stack gap={2}>
             <Group gap="xs">

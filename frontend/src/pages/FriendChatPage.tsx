@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Avatar,
   Box,
   Button,
   Card,
@@ -15,6 +14,7 @@ import {
 import { IconArrowLeft, IconSend } from "@tabler/icons-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import UserProfileAvatar from "@/components/UserProfileAvatar";
 import { apiFetch } from "@/lib/api";
 import type { MyPageUser } from "@/features/community/post-detail/types/types";
 import { border, coralScale, gradient, surface, text } from "@/tokens/color";
@@ -24,6 +24,7 @@ type MatchingUser = {
   nickname: string;
   parents_mbti: string | null;
   region: string;
+  profile_image_url?: string | null;
 };
 
 type ChatMessage = {
@@ -127,7 +128,7 @@ export default function FriendChatPage() {
         if (!isMounted) return;
 
         alert("채팅방 정보를 불러오지 못했습니다.");
-        navigate("/friends");
+        navigate("/friends?tab=chats", { replace: true });
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -211,11 +212,11 @@ export default function FriendChatPage() {
               variant="subtle"
               color="coral"
               leftSection={<IconArrowLeft size={16} />}
-              onClick={() => navigate("/friends")}
+              onClick={() => navigate("/friends?tab=chats", { replace: true })}
               w="fit-content"
               style={{ flexShrink: 0 }}
             >
-              친구찾기로 돌아가기
+              채팅 목록
             </Button>
 
             <Card
@@ -241,10 +242,12 @@ export default function FriendChatPage() {
                 }}
               >
                 <Group justify="space-between">
-                  <Group gap="sm">
-                    <Avatar radius="xl" color="coral">
-                      {otherUser?.nickname?.[0] ?? "?"}
-                    </Avatar>
+                  <Group gap="sm" align="center">
+                    <UserProfileAvatar
+                      profileImageUrl={otherUser?.profile_image_url}
+                      nickname={otherUser?.nickname}
+                      size={44}
+                    />
 
                     <Stack gap={0}>
                       <Text fw={800} size="md" c={text.primary}>
@@ -351,18 +354,24 @@ export default function FriendChatPage() {
                             gap={6}
                           >
                             {!isMine && (
-                              <Avatar
-                                size={32}
-                                radius="xl"
-                                color="coral"
+                              <Box
                                 style={{
                                   visibility: shouldShowName
                                     ? "visible"
                                     : "hidden",
+                                  width: 32,
+                                  height: 32,
+                                  flexShrink: 0,
                                 }}
                               >
-                                {message.sender.nickname?.[0] ?? "?"}
-                              </Avatar>
+                                <UserProfileAvatar
+                                  profileImageUrl={
+                                    message.sender.profile_image_url
+                                  }
+                                  nickname={message.sender.nickname}
+                                  size={32}
+                                />
+                              </Box>
                             )}
 
                             {isMine && isLastInSenderGroup && (
@@ -424,6 +433,7 @@ export default function FriendChatPage() {
                       <Text size="lg" fw={800} c={text.primary}>
                         아직 메시지가 없습니다.
                       </Text>
+
                       <Text size="sm" c={text.muted} ta="center">
                         첫 인사를 보내 대화를 시작해보세요.
                       </Text>

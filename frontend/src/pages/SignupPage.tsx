@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Container,
+  Image,
   PasswordInput,
   Select,
   Stack,
@@ -10,9 +11,10 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-
-import { REGION_OPTIONS } from "@/features/auth/constants/region";
 import { useNavigate } from "react-router-dom";
+
+import signupIcon from "@/assets/images/onai-signup-icon.png";
+import { REGION_OPTIONS } from "@/features/auth/constants/region";
 
 type SignupForm = {
   id: string;
@@ -26,8 +28,11 @@ type SignupForm = {
   region: string;
 };
 
+const PENDING_SIGNUP_KEY = "onai_pending_signup";
+
 export default function SignupPage() {
   const navigate = useNavigate();
+
   const [form, setForm] = useState<SignupForm>({
     id: "",
     pwd: "",
@@ -39,9 +44,9 @@ export default function SignupPage() {
     email: "",
     region: "",
   });
+
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (name: keyof SignupForm, value: string) => {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -50,41 +55,60 @@ export default function SignupPage() {
   const handleProvinceChange = (province: string | null) => {
     setSelectedProvince(province);
     setSelectedDistrict(null);
+
     if (!province) {
       handleChange("region", "");
       return;
     }
+
     const districts = REGION_OPTIONS[province];
     handleChange("region", districts.length === 0 ? province : "");
   };
 
   const handleDistrictChange = (district: string | null) => {
     setSelectedDistrict(district);
+
     if (!selectedProvince || !district) {
       handleChange("region", "");
       return;
     }
+
     handleChange("region", `${selectedProvince} ${district}`);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      const response = await fetch("http://127.0.0.1:8000/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error("회원가입에 실패했습니다.");
-      alert("회원가입이 완료되었습니다.");
-      navigate("/onboarding/children");
-    } catch (error) {
-      console.error(error);
-      alert("회원가입 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
+
+    if (
+      !form.id.trim() ||
+      !form.pwd ||
+      !form.nickname.trim() ||
+      !form.parents_name.trim() ||
+      !form.parents_birth ||
+      !form.parents_gender ||
+      !form.email.trim() ||
+      !form.region
+    ) {
+      alert("필수 정보를 모두 입력해주세요.");
+      return;
     }
+
+    sessionStorage.setItem(
+      PENDING_SIGNUP_KEY,
+      JSON.stringify({
+        id: form.id.trim(),
+        pwd: form.pwd,
+        nickname: form.nickname.trim(),
+        parents_name: form.parents_name.trim(),
+        parents_birth: form.parents_birth,
+        parents_gender: form.parents_gender,
+        parents_mbti: form.parents_mbti || null,
+        email: form.email.trim(),
+        region: form.region,
+      }),
+    );
+
+    navigate("/onboarding/children");
   };
 
   return (
@@ -108,7 +132,6 @@ export default function SignupPage() {
 
         .fade-in { animation: fadeUp .65s cubic-bezier(.22,1,.36,1) both .06s; }
 
-        /* ── section divider label ── */
         .section-label {
           font-family: 'Nunito', sans-serif;
           font-size: 11px;
@@ -121,7 +144,6 @@ export default function SignupPage() {
           margin-bottom: 2px;
         }
 
-        /* ── all inputs & selects ── */
         .si input,
         .si .mantine-Select-input {
           background: rgba(255,255,255,0.72) !important;
@@ -152,7 +174,7 @@ export default function SignupPage() {
           margin-bottom: 5px !important;
           letter-spacing: .2px !important;
         }
-        /* password wrapper */
+
         .si .mantine-PasswordInput-input {
           background: rgba(255,255,255,0.72) !important;
           border: 1.5px solid rgba(255,160,150,0.28) !important;
@@ -173,7 +195,7 @@ export default function SignupPage() {
           padding: 10px 14px !important;
           height: auto !important;
         }
-        /* disabled select */
+
         .si .mantine-Select-input:disabled {
           background: rgba(240,230,232,0.55) !important;
           color: rgba(160,100,110,0.4) !important;
@@ -217,7 +239,6 @@ export default function SignupPage() {
           overflow: "hidden",
         }}
       >
-        {/* background blobs */}
         <Box style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           <Box
             style={{
@@ -231,6 +252,7 @@ export default function SignupPage() {
               filter: "blur(70px)",
             }}
           />
+
           <Box
             style={{
               position: "absolute",
@@ -243,6 +265,7 @@ export default function SignupPage() {
               filter: "blur(60px)",
             }}
           />
+
           <Box
             style={{
               position: "absolute",
@@ -255,6 +278,7 @@ export default function SignupPage() {
               filter: "blur(38px)",
             }}
           />
+
           {[
             { w: 48, t: "7%", l: "7%", d: 0, a: 0.5 },
             { w: 28, t: "20%", l: "80%", d: 1.2, a: 0.42 },
@@ -284,14 +308,13 @@ export default function SignupPage() {
           style={{ position: "relative", zIndex: 1 }}
         >
           <Stack gap={0} align="center">
-            {/* logo mark */}
             <Box
               className="fade-in"
               style={{
                 position: "relative",
-                width: 64,
-                height: 64,
-                marginBottom: 16,
+                width: 116,
+                height: 116,
+                marginBottom: 12,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -302,29 +325,25 @@ export default function SignupPage() {
                   position: "absolute",
                   inset: 0,
                   borderRadius: "50%",
-                  border: "2px solid rgba(255,143,163,0.45)",
+                  border: "2px solid rgba(255,143,163,0.35)",
                   animation: "pulse-ring 2.4s ease-out infinite",
                 }}
               />
-              <Box
+
+              <Image
+                src={signupIcon}
+                alt="ON.AI 회원가입 캐릭터"
+                fit="contain"
                 style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: "50%",
-                  background:
-                    "linear-gradient(135deg, #ffb3c1 0%, #ff8fa3 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 27,
-                  boxShadow: "0 6px 22px rgba(255,100,130,0.25)",
+                  width: 104,
+                  height: 104,
+                  objectFit: "contain",
+                  position: "relative",
+                  zIndex: 1,
                 }}
-              >
-                🌷
-              </Box>
+              />
             </Box>
 
-            {/* heading */}
             <Box className="fade-in" ta="center" mb={24}>
               <Title
                 order={2}
@@ -338,6 +357,7 @@ export default function SignupPage() {
               >
                 ON.AI 회원가입
               </Title>
+
               <Text
                 mt={6}
                 style={{
@@ -353,7 +373,6 @@ export default function SignupPage() {
               </Text>
             </Box>
 
-            {/* glass card */}
             <Box
               className="fade-in"
               style={{
@@ -370,8 +389,8 @@ export default function SignupPage() {
             >
               <form onSubmit={handleSubmit}>
                 <Stack gap={14}>
-                  {/* ── 계정 정보 ── */}
                   <div className="section-label">계정 정보</div>
+
                   <TextInput
                     className="si"
                     label="아이디"
@@ -380,6 +399,7 @@ export default function SignupPage() {
                     onChange={(e) => handleChange("id", e.target.value)}
                     required
                   />
+
                   <PasswordInput
                     className="si"
                     label="비밀번호"
@@ -388,6 +408,7 @@ export default function SignupPage() {
                     onChange={(e) => handleChange("pwd", e.target.value)}
                     required
                   />
+
                   <TextInput
                     className="si"
                     label="닉네임"
@@ -396,6 +417,7 @@ export default function SignupPage() {
                     onChange={(e) => handleChange("nickname", e.target.value)}
                     required
                   />
+
                   <TextInput
                     className="si"
                     label="이메일"
@@ -406,10 +428,10 @@ export default function SignupPage() {
                     required
                   />
 
-                  {/* ── 부모 정보 ── */}
                   <div className="section-label" style={{ marginTop: 6 }}>
                     부모 정보
                   </div>
+
                   <TextInput
                     className="si"
                     label="부모 이름"
@@ -420,6 +442,7 @@ export default function SignupPage() {
                     }
                     required
                   />
+
                   <TextInput
                     className="si"
                     label="부모 생년월일"
@@ -443,14 +466,14 @@ export default function SignupPage() {
                       label="부모 성별"
                       placeholder="성별 선택"
                       data={[
-                        { value: "female", label: "여성" },
-                        { value: "male", label: "남성" },
-                        { value: "none", label: "선택 안 함" },
+                        { value: "남성", label: "남성" },
+                        { value: "여성", label: "여성" },
                       ]}
                       value={form.parents_gender}
                       onChange={(v) => handleChange("parents_gender", v || "")}
                       required
                     />
+
                     <Select
                       className="si"
                       label="MBTI"
@@ -478,10 +501,10 @@ export default function SignupPage() {
                     />
                   </Box>
 
-                  {/* ── 지역 ── */}
                   <div className="section-label" style={{ marginTop: 6 }}>
                     거주 지역
                   </div>
+
                   <Box
                     style={{
                       display: "grid",
@@ -498,6 +521,7 @@ export default function SignupPage() {
                       onChange={handleProvinceChange}
                       required
                     />
+
                     <Select
                       className="si"
                       label="시/군/구"
@@ -524,10 +548,8 @@ export default function SignupPage() {
                     />
                   </Box>
 
-                  {/* submit */}
                   <Button
                     type="submit"
-                    loading={loading}
                     fullWidth
                     radius="xl"
                     size="md"
@@ -547,13 +569,12 @@ export default function SignupPage() {
                       height: "auto",
                     }}
                   >
-                    다음 →
+                    다음
                   </Button>
                 </Stack>
               </form>
             </Box>
 
-            {/* login link */}
             <Text
               mt={18}
               size="sm"

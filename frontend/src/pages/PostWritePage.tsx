@@ -34,6 +34,7 @@ import {
   TITLE_MAX,
 } from "@/features/community/post-write/constants/constants";
 import { REGION_OPTIONS } from "@/features/auth/constants/region";
+import postWriteIcon from "@/assets/images/onai-post-write-icon.png";
 import {
   border,
   coralScale,
@@ -371,7 +372,7 @@ export default function PostWritePage() {
       <Box style={{ minHeight: "100vh", background: surface.bg }}>
         <Container size="md" py="xl">
           <Stack gap="lg">
-            <Group justify="space-between" align="center">
+            <Group justify="flex-start" align="center">
               <Button
                 variant="subtle"
                 color="coral"
@@ -386,33 +387,31 @@ export default function PostWritePage() {
               >
                 돌아가기
               </Button>
-
-              <Button
-                size="sm"
-                radius="xl"
-                leftSection={<IconSend size={14} />}
-                disabled={!canSubmit}
-                loading={submitLoading}
-                onClick={() => void handleSubmit()}
-                style={{
-                  background: canSubmit ? gradient.primary : undefined,
-                  border: "none",
-                  boxShadow: canSubmit ? shadow.btn : "none",
-                }}
-              >
-                {isEditMode ? "수정하기" : "등록하기"}
-              </Button>
             </Group>
 
-            <Stack gap={4}>
-              <Title order={2} c={text.primary}>
-                {isEditMode ? "게시글 수정" : "게시글 작성"}
-              </Title>
+            <Group gap="md" align="center" wrap="nowrap">
+              <Image
+                src={postWriteIcon}
+                alt="ON.AI 게시글 작성 아이콘"
+                fit="contain"
+                style={{
+                  width: 76,
+                  height: 76,
+                  objectFit: "contain",
+                  flexShrink: 0,
+                }}
+              />
 
-              <Text size="sm" c={text.secondary}>
-                육아 경험, 고민, 정보를 자유롭게 나눠보세요.
-              </Text>
-            </Stack>
+              <Stack gap={4} style={{ minWidth: 0 }}>
+                <Title order={2} c={text.primary}>
+                  {isEditMode ? "게시글 수정" : "게시글 작성"}
+                </Title>
+
+                <Text size="sm" c={text.secondary}>
+                  육아 경험, 고민, 정보를 자유롭게 나눠보세요.
+                </Text>
+              </Stack>
+            </Group>
 
             <Card p="xl" radius="xl" withBorder>
               <Stack gap="md">
@@ -710,6 +709,25 @@ export default function PostWritePage() {
                 </Text>
               </Card>
             )}
+
+            <Button
+              fullWidth
+              size="md"
+              radius="xl"
+              leftSection={<IconSend size={18} />}
+              disabled={!canSubmit}
+              loading={submitLoading}
+              onClick={() => void handleSubmit()}
+              style={{
+                height: 48,
+                background: canSubmit ? gradient.primary : undefined,
+                border: "none",
+                boxShadow: canSubmit ? shadow.btn : "none",
+                fontWeight: 800,
+              }}
+            >
+              {isEditMode ? "수정완료" : "작성완료"}
+            </Button>
           </Stack>
         </Container>
       </Box>

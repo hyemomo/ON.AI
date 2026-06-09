@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   ActionIcon,
-  Avatar,
   Badge,
   Box,
   Button,
@@ -10,6 +9,7 @@ import {
   Divider,
   FileButton,
   Group,
+  Image,
   Modal,
   ScrollArea,
   Select,
@@ -25,12 +25,14 @@ import {
   IconLogout,
   IconPlus,
   IconTrash,
-  IconUserCircle,
   IconX,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
+
 import AppLayout from "@/components/AppLayout";
-import { apiFetch, API_BASE_URL, toStaticUrl } from "@/lib/api";
+import UserProfileAvatar from "@/components/UserProfileAvatar";
+import mypageIcon from "@/assets/images/onai-mypage-icon.png";
+import { apiFetch, API_BASE_URL } from "@/lib/api";
 import { getAccessToken, logout } from "@/lib/auth";
 import { REGION_OPTIONS } from "@/features/auth/constants/region";
 import {
@@ -132,7 +134,6 @@ const INTEREST_CATEGORIES = {
 };
 
 const regionOptions = REGION_OPTIONS as Record<string, string[]>;
-
 const REGION_PROVINCES = Object.keys(regionOptions);
 
 const REGION_DATA = Object.entries(regionOptions).flatMap(
@@ -152,6 +153,14 @@ function normalizeDate(value?: string | null) {
   return value.slice(0, 10);
 }
 
+function formatDisplayDate(value?: string | null) {
+  const normalizedDate = normalizeDate(value);
+
+  if (!normalizedDate) return "미입력";
+
+  return normalizedDate.replaceAll("-", ".");
+}
+
 function createProfileForm(data: MyPageResponse): ProfileForm {
   return {
     nickname: data.nickname ?? "",
@@ -162,6 +171,15 @@ function createProfileForm(data: MyPageResponse): ProfileForm {
     email: data.email ?? "",
     region: data.region ?? "",
   };
+}
+
+function createChildrenForm(data: MyPageResponse) {
+  return (data.children ?? []).slice(0, MAX_CHILD_COUNT).map((child) => ({
+    childnum: child.childnum,
+    child_name: child.child_name ?? "",
+    child_birth: normalizeDate(child.child_birth),
+    child_gender: child.child_gender ?? "",
+  }));
 }
 
 function getProvinceDistricts(province: string) {
@@ -215,10 +233,64 @@ function ProfileSummaryItem({
   );
 }
 
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <Group
+      justify="space-between"
+      align="flex-start"
+      wrap="nowrap"
+      py="sm"
+      style={{
+        borderBottom: `1px solid ${border.default}`,
+      }}
+    >
+      <Text
+        size="sm"
+        fw={700}
+        c={text.muted}
+        style={{
+          minWidth: 112,
+          flexShrink: 0,
+        }}
+      >
+        {label}
+      </Text>
+
+      <Text
+        size="sm"
+        fw={700}
+        c={text.primary}
+        ta="right"
+        style={{
+          lineHeight: 1.6,
+          wordBreak: "keep-all",
+        }}
+      >
+        {value || "미입력"}
+      </Text>
+    </Group>
+  );
+}
+
+function EmptyInfoText({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      size="sm"
+      c={text.muted}
+      style={{
+        lineHeight: 1.7,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
 export default function MyPage() {
   const navigate = useNavigate();
 
   const [user, setUser] = useState<MyPageResponse | null>(null);
+
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     nickname: "",
     parents_name: "",
@@ -235,6 +307,8 @@ export default function MyPage() {
 
   const [loading, setLoading] = useState(true);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
+  const [isChildrenEditing, setIsChildrenEditing] = useState(false);
+
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileImageSaving, setProfileImageSaving] = useState(false);
   const [childrenSaving, setChildrenSaving] = useState(false);
@@ -244,6 +318,7 @@ export default function MyPage() {
   const [isProfileImageModalOpen, setIsProfileImageModalOpen] = useState(false);
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
   const [isInterestModalOpen, setIsInterestModalOpen] = useState(false);
+
   const [selectedRegionProvince, setSelectedRegionProvince] = useState(
     REGION_PROVINCES[0] ?? "",
   );
@@ -259,15 +334,7 @@ export default function MyPage() {
   const applyMyPageData = (data: MyPageResponse) => {
     setUser(data);
     setProfileForm(createProfileForm(data));
-
-    setChildren(
-      (data.children ?? []).slice(0, MAX_CHILD_COUNT).map((child) => ({
-        childnum: child.childnum,
-        child_name: child.child_name ?? "",
-        child_birth: normalizeDate(child.child_birth),
-        child_gender: child.child_gender ?? "",
-      })),
-    );
+    setChildren(createChildrenForm(data));
 
     setInterestRegions(
       (data.interest_regions ?? []).map((region) => region.region_name),
@@ -334,6 +401,22 @@ export default function MyPage() {
     }
 
     setIsProfileEditing(false);
+  };
+
+  const handleStartChildrenEdit = () => {
+    if (user) {
+      setChildren(createChildrenForm(user));
+    }
+
+    setIsChildrenEditing(true);
+  };
+
+  const handleCancelChildrenEdit = () => {
+    if (user) {
+      setChildren(createChildrenForm(user));
+    }
+
+    setIsChildrenEditing(false);
   };
 
   const handleChangeChild = (
@@ -463,6 +546,7 @@ export default function MyPage() {
       alert("프로필 이미지가 수정되었습니다.");
     } catch (error) {
       console.error(error);
+
       alert(
         error instanceof Error
           ? error.message
@@ -494,6 +578,7 @@ export default function MyPage() {
       alert("프로필 이미지가 삭제되었습니다.");
     } catch (error) {
       console.error(error);
+
       alert(
         error instanceof Error
           ? error.message
@@ -538,6 +623,7 @@ export default function MyPage() {
       alert("기본정보가 수정되었습니다.");
     } catch (error) {
       console.error(error);
+
       alert(
         error instanceof Error
           ? error.message
@@ -560,7 +646,7 @@ export default function MyPage() {
     );
 
     if (children.length !== validChildren.length) {
-      alert("자녀 정보의 이름, 생년월일, 성별을 모두 입력해주세요.");
+      alert("아이 이름, 생년월일, 성별을 모두 입력해주세요.");
       return;
     }
 
@@ -579,13 +665,15 @@ export default function MyPage() {
       });
 
       await loadMyPage();
-      alert("자녀 정보가 수정되었습니다.");
+      setIsChildrenEditing(false);
+      alert("아이 정보가 수정되었습니다.");
     } catch (error) {
       console.error(error);
+
       alert(
         error instanceof Error
           ? error.message
-          : "자녀 정보 수정에 실패했습니다.",
+          : "아이 정보 수정에 실패했습니다.",
       );
     } finally {
       setChildrenSaving(false);
@@ -615,6 +703,7 @@ export default function MyPage() {
       alert("관심지역이 수정되었습니다.");
     } catch (error) {
       console.error(error);
+
       alert(
         error instanceof Error
           ? error.message
@@ -646,6 +735,7 @@ export default function MyPage() {
       alert("관심사가 수정되었습니다.");
     } catch (error) {
       console.error(error);
+
       alert(
         error instanceof Error ? error.message : "관심사 수정에 실패했습니다.",
       );
@@ -660,16 +750,26 @@ export default function MyPage() {
     navigate("/", { replace: true });
   };
 
-  const profileImageSrc = toStaticUrl(user?.profile_image_url);
   const hasProfileImage = !!user?.profile_image_url;
 
   return (
     <AppLayout>
       <Box style={{ minHeight: "100vh", background: surface.bg }}>
-        <Container size="md" py="xl">
+        <Container size="md" py="md">
           <Stack gap="lg">
-            <Group gap="sm">
-              <IconUserCircle size={30} color={coralScale[5]} />
+            <Group gap="md" align="center" wrap="nowrap">
+              <Image
+                src={mypageIcon}
+                alt="ON.AI 마이페이지 아이콘"
+                fit="contain"
+                style={{
+                  width: 68,
+                  height: 68,
+                  objectFit: "contain",
+                  flexShrink: 0,
+                }}
+              />
+
               <Title order={2} c={text.primary}>
                 마이페이지
               </Title>
@@ -686,18 +786,11 @@ export default function MyPage() {
                     <Group justify="space-between" align="flex-start">
                       <Group gap="md" align="center">
                         <Box style={{ position: "relative" }}>
-                          <Avatar
-                            src={profileImageSrc}
+                          <UserProfileAvatar
+                            profileImageUrl={user.profile_image_url}
+                            nickname={user.nickname}
                             size={82}
-                            radius="50%"
-                            color="coral"
-                            style={{
-                              border: `2px solid ${border.default}`,
-                              boxShadow: "0 8px 20px rgba(255, 111, 118, 0.14)",
-                            }}
-                          >
-                            {user.nickname?.[0] ?? "?"}
-                          </Avatar>
+                          />
 
                           <ActionIcon
                             size="sm"
@@ -721,6 +814,7 @@ export default function MyPage() {
                           <Text size="xl" fw={800} c={text.primary}>
                             {user.nickname}
                           </Text>
+
                           <Text size="sm" c={text.secondary}>
                             {user.email}
                           </Text>
@@ -758,7 +852,7 @@ export default function MyPage() {
 
                 <Card p="xl" radius="xl" withBorder>
                   <Stack gap="md">
-                    <Group justify="space-between">
+                    <Group justify="space-between" align="center">
                       <Title order={3} size="h4" c={text.primary}>
                         부모 기본정보
                       </Title>
@@ -807,202 +901,285 @@ export default function MyPage() {
 
                     <Divider color={border.default} />
 
-                    <TextInput
-                      label="닉네임"
-                      value={profileForm.nickname}
-                      onChange={(e) =>
-                        handleChangeProfile("nickname", e.currentTarget.value)
-                      }
-                      required
-                      disabled={!isProfileEditing}
-                    />
+                    {isProfileEditing ? (
+                      <Card p="md" radius="lg" withBorder bg={surface.subtle}>
+                        <Stack gap="sm">
+                          <TextInput
+                            label="닉네임"
+                            value={profileForm.nickname}
+                            onChange={(e) =>
+                              handleChangeProfile(
+                                "nickname",
+                                e.currentTarget.value,
+                              )
+                            }
+                            required
+                          />
 
-                    <TextInput
-                      label="보호자 이름"
-                      value={profileForm.parents_name}
-                      onChange={(e) =>
-                        handleChangeProfile(
-                          "parents_name",
-                          e.currentTarget.value,
-                        )
-                      }
-                      required
-                      disabled={!isProfileEditing}
-                    />
+                          <TextInput
+                            label="보호자 이름"
+                            value={profileForm.parents_name}
+                            onChange={(e) =>
+                              handleChangeProfile(
+                                "parents_name",
+                                e.currentTarget.value,
+                              )
+                            }
+                            required
+                          />
 
-                    <TextInput
-                      label="보호자 생년월일"
-                      type="date"
-                      value={profileForm.parents_birth}
-                      onChange={(e) =>
-                        handleChangeProfile(
-                          "parents_birth",
-                          e.currentTarget.value,
-                        )
-                      }
-                      required
-                      disabled={!isProfileEditing}
-                    />
+                          <TextInput
+                            label="보호자 생년월일"
+                            type="date"
+                            value={profileForm.parents_birth}
+                            onChange={(e) =>
+                              handleChangeProfile(
+                                "parents_birth",
+                                e.currentTarget.value,
+                              )
+                            }
+                            required
+                          />
 
-                    <Select
-                      label="보호자 성별"
-                      data={GENDER_OPTIONS}
-                      value={profileForm.parents_gender}
-                      onChange={(value) =>
-                        handleChangeProfile("parents_gender", value ?? "")
-                      }
-                      required
-                      disabled={!isProfileEditing}
-                    />
+                          <Select
+                            label="보호자 성별"
+                            data={GENDER_OPTIONS}
+                            value={profileForm.parents_gender}
+                            onChange={(value) =>
+                              handleChangeProfile("parents_gender", value ?? "")
+                            }
+                            required
+                          />
 
-                    <Select
-                      label="MBTI"
-                      data={MBTI_OPTIONS}
-                      value={profileForm.parents_mbti || null}
-                      onChange={(value) =>
-                        handleChangeProfile("parents_mbti", value ?? "")
-                      }
-                      clearable
-                      disabled={!isProfileEditing}
-                    />
+                          <Select
+                            label="MBTI"
+                            data={MBTI_OPTIONS}
+                            value={profileForm.parents_mbti || null}
+                            onChange={(value) =>
+                              handleChangeProfile("parents_mbti", value ?? "")
+                            }
+                            clearable
+                          />
 
-                    <TextInput
-                      label="이메일"
-                      type="email"
-                      value={profileForm.email}
-                      onChange={(e) =>
-                        handleChangeProfile("email", e.currentTarget.value)
-                      }
-                      required
-                      disabled={!isProfileEditing}
-                    />
+                          <TextInput
+                            label="이메일"
+                            type="email"
+                            value={profileForm.email}
+                            onChange={(e) =>
+                              handleChangeProfile(
+                                "email",
+                                e.currentTarget.value,
+                              )
+                            }
+                            required
+                          />
 
-                    <Select
-                      label="거주 지역"
-                      searchable
-                      data={REGION_DATA}
-                      value={profileForm.region || null}
-                      onChange={(value) =>
-                        handleChangeProfile("region", value ?? "")
-                      }
-                      required
-                      disabled={!isProfileEditing}
-                    />
+                          <Select
+                            label="거주 지역"
+                            searchable
+                            data={REGION_DATA}
+                            value={profileForm.region || null}
+                            onChange={(value) =>
+                              handleChangeProfile("region", value ?? "")
+                            }
+                            required
+                          />
+                        </Stack>
+                      </Card>
+                    ) : (
+                      <Stack gap={0}>
+                        <InfoRow label="닉네임" value={user.nickname} />
+                        <InfoRow
+                          label="보호자 이름"
+                          value={user.parents_name}
+                        />
+                        <InfoRow
+                          label="보호자 생년월일"
+                          value={formatDisplayDate(user.parents_birth)}
+                        />
+                        <InfoRow
+                          label="보호자 성별"
+                          value={user.parents_gender}
+                        />
+                        <InfoRow
+                          label="MBTI"
+                          value={user.parents_mbti || "미입력"}
+                        />
+                        <InfoRow label="이메일" value={user.email} />
+                        <InfoRow label="거주 지역" value={user.region} />
+                      </Stack>
+                    )}
                   </Stack>
                 </Card>
 
                 <Card p="xl" radius="xl" withBorder>
                   <Stack gap="md">
-                    <Group justify="space-between">
+                    <Group justify="space-between" align="center">
                       <Title order={3} size="h4" c={text.primary}>
                         내 아이 정보
                       </Title>
 
-                      <Group gap="xs">
+                      {isChildrenEditing ? (
+                        <Group gap="xs">
+                          <Button
+                            size="xs"
+                            radius="xl"
+                            variant="light"
+                            color="gray"
+                            leftSection={<IconX size={14} />}
+                            onClick={handleCancelChildrenEdit}
+                            disabled={childrenSaving}
+                          >
+                            취소
+                          </Button>
+
+                          <Button
+                            size="xs"
+                            radius="xl"
+                            variant="light"
+                            color="coral"
+                            leftSection={<IconPlus size={14} />}
+                            onClick={handleAddChild}
+                            disabled={children.length >= MAX_CHILD_COUNT}
+                          >
+                            {children.length >= MAX_CHILD_COUNT
+                              ? "아이 등록 완료"
+                              : "아이 추가"}
+                          </Button>
+
+                          <Button
+                            size="xs"
+                            radius="xl"
+                            leftSection={<IconDeviceFloppy size={14} />}
+                            loading={childrenSaving}
+                            onClick={() => void handleSaveChildren()}
+                            style={{
+                              background: gradient.primary,
+                              boxShadow: shadow.btn,
+                            }}
+                          >
+                            저장
+                          </Button>
+                        </Group>
+                      ) : (
                         <Button
                           size="xs"
                           radius="xl"
                           variant="light"
                           color="coral"
-                          leftSection={<IconPlus size={14} />}
-                          onClick={handleAddChild}
-                          disabled={children.length >= MAX_CHILD_COUNT}
+                          leftSection={<IconEdit size={14} />}
+                          onClick={handleStartChildrenEdit}
                         >
-                          {children.length >= MAX_CHILD_COUNT
-                            ? "아이 등록 완료"
-                            : "아이 추가"}
+                          수정
                         </Button>
-
-                        <Button
-                          size="xs"
-                          radius="xl"
-                          leftSection={<IconDeviceFloppy size={14} />}
-                          loading={childrenSaving}
-                          onClick={() => void handleSaveChildren()}
-                          style={{
-                            background: gradient.primary,
-                            boxShadow: shadow.btn,
-                          }}
-                        >
-                          저장
-                        </Button>
-                      </Group>
+                      )}
                     </Group>
 
                     <Divider color={border.default} />
 
-                    {children.length > 0 ? (
-                      children.map((child, index) => (
-                        <Card
-                          key={`${child.childnum ?? "new"}-${index}`}
-                          p="md"
-                          radius="lg"
-                          withBorder
-                          bg={surface.subtle}
-                        >
-                          <Stack gap="sm">
-                            <Group justify="space-between">
-                              <Text fw={700} c={text.primary}>
-                                아이 정보
-                              </Text>
+                    {isChildrenEditing ? (
+                      <Stack gap="md">
+                        {children.length > 0 ? (
+                          children.map((child, index) => (
+                            <Card
+                              key={`${child.childnum ?? "new"}-${index}`}
+                              p="md"
+                              radius="lg"
+                              withBorder
+                              bg={surface.subtle}
+                            >
+                              <Stack gap="sm">
+                                <Group justify="space-between">
+                                  <Text fw={700} c={text.primary}>
+                                    아이 정보
+                                  </Text>
 
-                              <ActionIcon
-                                variant="subtle"
-                                color="red"
-                                onClick={() => handleRemoveChild(index)}
-                              >
-                                <IconTrash size={16} />
-                              </ActionIcon>
-                            </Group>
+                                  <ActionIcon
+                                    variant="subtle"
+                                    color="red"
+                                    onClick={() => handleRemoveChild(index)}
+                                  >
+                                    <IconTrash size={16} />
+                                  </ActionIcon>
+                                </Group>
 
-                            <TextInput
+                                <TextInput
+                                  label="아이 이름"
+                                  value={child.child_name}
+                                  onChange={(e) =>
+                                    handleChangeChild(
+                                      index,
+                                      "child_name",
+                                      e.currentTarget.value,
+                                    )
+                                  }
+                                  required
+                                />
+
+                                <TextInput
+                                  label="아이 생년월일"
+                                  type="date"
+                                  value={normalizeDate(child.child_birth)}
+                                  onChange={(e) =>
+                                    handleChangeChild(
+                                      index,
+                                      "child_birth",
+                                      e.currentTarget.value,
+                                    )
+                                  }
+                                  required
+                                />
+
+                                <Select
+                                  label="아이 성별"
+                                  data={CHILD_GENDER_OPTIONS}
+                                  value={child.child_gender || null}
+                                  onChange={(value) =>
+                                    handleChangeChild(
+                                      index,
+                                      "child_gender",
+                                      value ?? "",
+                                    )
+                                  }
+                                  required
+                                />
+                              </Stack>
+                            </Card>
+                          ))
+                        ) : (
+                          <EmptyInfoText>
+                            등록된 아이 정보가 없습니다. 아이 추가 버튼으로 아이
+                            1명의 정보를 등록해주세요.
+                          </EmptyInfoText>
+                        )}
+                      </Stack>
+                    ) : children.length > 0 ? (
+                      <Stack gap="lg">
+                        {children.map((child, index) => (
+                          <Stack
+                            key={`${child.childnum ?? "child"}-${index}`}
+                            gap={0}
+                          >
+                            <InfoRow
                               label="아이 이름"
                               value={child.child_name}
-                              onChange={(e) =>
-                                handleChangeChild(
-                                  index,
-                                  "child_name",
-                                  e.currentTarget.value,
-                                )
-                              }
-                              required
                             />
-
-                            <TextInput
+                            <InfoRow
                               label="아이 생년월일"
-                              type="date"
-                              value={normalizeDate(child.child_birth)}
-                              onChange={(e) =>
-                                handleChangeChild(
-                                  index,
-                                  "child_birth",
-                                  e.currentTarget.value,
-                                )
-                              }
-                              required
+                              value={formatDisplayDate(child.child_birth)}
                             />
-
-                            <Select
+                            <InfoRow
                               label="아이 성별"
-                              data={CHILD_GENDER_OPTIONS}
-                              value={child.child_gender || null}
-                              onChange={(value) =>
-                                handleChangeChild(
-                                  index,
-                                  "child_gender",
-                                  value ?? "",
-                                )
-                              }
-                              required
+                              value={child.child_gender}
                             />
                           </Stack>
-                        </Card>
-                      ))
+                        ))}
+                      </Stack>
                     ) : (
-                      <Text size="sm" c={text.muted}>
-                        등록된 아이 정보가 없습니다. 아이 추가 버튼으로 아이
-                        1명의 정보를 등록해주세요.
-                      </Text>
+                      <EmptyInfoText>
+                        등록된 아이 정보가 없습니다. 수정 버튼을 눌러 아이
+                        정보를 등록해주세요.
+                      </EmptyInfoText>
                     )}
                   </Stack>
                 </Card>
@@ -1014,6 +1191,7 @@ export default function MyPage() {
                         <Title order={3} size="h4" c={text.primary}>
                           관심지역
                         </Title>
+
                         <Text size="xs" c={text.muted}>
                           최대 {MAX_INTEREST_REGION_COUNT}개까지 선택할 수
                           있습니다.
@@ -1057,6 +1235,7 @@ export default function MyPage() {
                         <Title order={3} size="h4" c={text.primary}>
                           관심사
                         </Title>
+
                         <Text size="xs" c={text.muted}>
                           최대 {MAX_INTEREST_COUNT}개까지 선택할 수 있습니다.
                         </Text>
@@ -1121,18 +1300,11 @@ export default function MyPage() {
       >
         <Stack gap="md">
           <Group justify="center">
-            <Avatar
-              src={profileImageSrc}
+            <UserProfileAvatar
+              profileImageUrl={user?.profile_image_url}
+              nickname={user?.nickname}
               size={110}
-              radius="50%"
-              color="coral"
-              style={{
-                border: `2px solid ${border.default}`,
-                boxShadow: "0 8px 20px rgba(255, 111, 118, 0.14)",
-              }}
-            >
-              {user?.nickname?.[0] ?? "?"}
-            </Avatar>
+            />
           </Group>
 
           <Text size="sm" c={text.secondary} ta="center">
@@ -1256,6 +1428,7 @@ export default function MyPage() {
                 <Text size="sm" fw={700} c={text.primary}>
                   선택된 관심지역
                 </Text>
+
                 <Text size="xs" c={text.muted}>
                   {interestRegions.length} / {MAX_INTEREST_REGION_COUNT}
                 </Text>
