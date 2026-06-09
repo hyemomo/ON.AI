@@ -1,19 +1,22 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from routers.chat import router as chat_router
+from routers.stt import router as stt_router
 from routers import auth
 from routers import mypage
 from routers import matching
 from routers import matching_requests
 from routers import chats
 from routers.community import posts, comments
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 
-# FastAPI 메인 서버 생성
 app = FastAPI(
-    title="ON-AI Community API",
-    description="ON-AI 커뮤니티 기능 API",
+    title="ON.AI API",
+    description="ON.AI 챗봇 및 커뮤니티 API",
     version="1.0.0"
 )
+
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -30,39 +33,21 @@ app.add_middleware(
 )
 
 # 정적 파일
-app.mount(
-    "/static",
-    StaticFiles(directory="static"),
-    name="static"
-)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# 커뮤니티 게시글 API 등록
-app.include_router(
-    posts.router,
-    prefix="/community/posts",
-    tags=["Community Posts"]
-)
+# 챗봇 API
+app.include_router(chat_router, prefix="/api")
+app.include_router(stt_router, prefix="/api")
 
-# 커뮤니티 댓글 API 등록
-app.include_router(
-    comments.router,
-    prefix="/community/comments",
-    tags=["Community Comments"]
-)
+# 커뮤니티 API
+app.include_router(posts.router, prefix="/community/posts", tags=["Community Posts"])
+app.include_router(comments.router, prefix="/community/comments", tags=["Community Comments"])
 
-# 로그인/회원가입 API 등록
-app.include_router(
-    auth.router,
-    prefix="/auth",
-    tags=["Auth"]
-)
+# 인증 API
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
-# 마이페이지 API 등록
-app.include_router(
-    mypage.router,
-    prefix="/mypage",
-    tags=["mypage"]
-)
+# 마이페이지 API
+app.include_router(mypage.router, prefix="/mypage", tags=["mypage"])
 
 # AI 육아친구 추천 API 등록
 app.include_router(
@@ -86,7 +71,6 @@ app.include_router(
 )
 
 
-# 서버 실행 확인용 기본 API
 @app.get("/")
 def root():
-    return {"message": "ON-AI backend server is running"}
+    return {"message": "ON.AI server is running"}

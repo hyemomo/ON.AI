@@ -34,3 +34,4 @@ crawler/data/chroma/*
 
 # Environment variables
 backend/.env
+backend/keys/

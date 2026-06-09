@@ -42,6 +42,20 @@ type ChatMessageListResponse = {
   messages: ChatMessage[];
 };
 
+type ChatRoom = {
+  room_id: number;
+  match_id: number;
+  other_user: MatchingUser;
+  created_at: string;
+  last_message_at: string | null;
+};
+
+type ChatRoomListResponse = {
+  message: string;
+  total: number;
+  rooms: ChatRoom[];
+};
+
 function getDateLabel(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
@@ -101,6 +115,7 @@ export default function FriendChatPage() {
   const viewport = useRef<HTMLDivElement>(null);
 
   const [currentUser, setCurrentUser] = useState<MyPageUser | null>(null);
+  const [otherUser, setOtherUser] = useState<MatchingUser | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -113,14 +128,20 @@ export default function FriendChatPage() {
 
     const loadInitialData = async () => {
       try {
-        const [me, messageData] = await Promise.all([
+        const [me, roomData, messageData] = await Promise.all([
           apiFetch<MyPageUser>("/mypage/me"),
+          apiFetch<ChatRoomListResponse>("/chats/rooms"),
           apiFetch<ChatMessageListResponse>(`/chats/rooms/${roomId}/messages`),
         ]);
 
         if (!isMounted) return;
 
+        const currentRoom = (roomData.rooms ?? []).find(
+          (room) => String(room.room_id) === String(roomId),
+        );
+
         setCurrentUser(me);
+        setOtherUser(currentRoom?.other_user ?? null);
         setMessages(messageData.messages ?? []);
       } catch (error) {
         console.error(error);
@@ -183,10 +204,6 @@ export default function FriendChatPage() {
       setSending(false);
     }
   };
-
-  const otherUser = messages.find(
-    (message) => message.sender.usernum !== currentUser?.usernum,
-  )?.sender;
 
   return (
     <AppLayout>
@@ -251,15 +268,19 @@ export default function FriendChatPage() {
 
                     <Stack gap={0}>
                       <Text fw={800} size="md" c={text.primary}>
-                        {otherUser?.nickname ?? "1:1 채팅"}
+                        {otherUser?.nickname ?? "대화 상대"}
                       </Text>
 
-                      {otherUser && (
+                      {otherUser ? (
                         <Text size="xs" c={text.muted}>
                           {otherUser.region}
                           {otherUser.parents_mbti
                             ? ` · ${otherUser.parents_mbti}`
                             : ""}
+                        </Text>
+                      ) : (
+                        <Text size="xs" c={text.muted}>
+                          상대방 정보를 불러오는 중입니다.
                         </Text>
                       )}
                     </Stack>
@@ -452,7 +473,11 @@ export default function FriendChatPage() {
               >
                 <Group gap="sm" align="flex-end">
                   <TextInput
-                    placeholder="메시지를 입력하세요"
+                    placeholder={
+                      otherUser?.nickname
+                        ? `${otherUser.nickname}님에게 메시지 보내기`
+                        : "메시지를 입력하세요"
+                    }
                     value={content}
                     onChange={(e) => setContent(e.currentTarget.value)}
                     onKeyDown={(e) => {
