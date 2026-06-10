@@ -7,6 +7,7 @@ import {
   Container,
   Divider,
   Group,
+  Image,
   Progress,
   ScrollArea,
   SegmentedControl,
@@ -19,11 +20,13 @@ import {
   IconCheck,
   IconMessageCircle,
   IconSend,
-  IconUserHeart,
+  IconSparkles,
   IconX,
 } from "@tabler/icons-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import UserProfileAvatar from "@/components/UserProfileAvatar";
+import friendFindIcon from "@/assets/images/onai-friendfind-icon.png";
 import { apiFetch, formatDateTime } from "@/lib/api";
 import {
   border,
@@ -39,6 +42,7 @@ type MatchingUser = {
   nickname: string;
   parents_mbti: string | null;
   region: string;
+  profile_image_url?: string | null;
 };
 
 type Recommendation = {
@@ -97,10 +101,120 @@ type FriendTab = "recommendations" | "requests" | "chats";
 const DEFAULT_MESSAGE =
   "안녕하세요! AI 추천에서 육아 관심사와 지역이 비슷하게 나와서 친해지고 싶어요.";
 
+function getFriendTabFromSearchParams(
+  searchParams: URLSearchParams,
+): FriendTab {
+  const tab = searchParams.get("tab");
+
+  if (tab === "requests" || tab === "chats") {
+    return tab;
+  }
+
+  return "recommendations";
+}
+
+function splitReasonText(reason: string) {
+  const normalizedReason = reason.trim();
+
+  if (!normalizedReason) {
+    return ["AI 추천 이유가 아직 준비되지 않았습니다."];
+  }
+
+  const dotSeparated = normalizedReason
+    .split("·")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (dotSeparated.length > 1) {
+    return dotSeparated;
+  }
+
+  const middleDotSeparated = normalizedReason
+    .split("ㆍ")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (middleDotSeparated.length > 1) {
+    return middleDotSeparated;
+  }
+
+  const sentenceSeparated = normalizedReason
+    .replace(/([.!?。])\s+/g, "$1|")
+    .split("|")
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  return sentenceSeparated.length > 0 ? sentenceSeparated : [normalizedReason];
+}
+
+function AiReasonBox({ reason }: { reason: string }) {
+  const reasonLines = splitReasonText(reason);
+
+  return (
+    <Card
+      p="md"
+      radius="lg"
+      withBorder
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(255, 247, 248, 0.96) 0%, rgba(255, 255, 255, 0.96) 100%)",
+        borderColor: coralScale[1],
+      }}
+    >
+      <Stack gap="xs">
+        <Group gap={6} align="center">
+          <IconSparkles size={16} color={coralScale[5]} />
+
+          <Text size="sm" fw={800} c={text.primary}>
+            AI 추천 이유
+          </Text>
+        </Group>
+
+        <Stack gap={6}>
+          {reasonLines.map((line, index) => (
+            <Group
+              key={`${line}-${index}`}
+              gap={8}
+              align="flex-start"
+              wrap="nowrap"
+            >
+              <Text
+                size="sm"
+                fw={800}
+                c={coralScale[5]}
+                style={{
+                  lineHeight: 1.65,
+                  flexShrink: 0,
+                }}
+              >
+                ·
+              </Text>
+
+              <Text
+                size="sm"
+                c={text.secondary}
+                style={{
+                  lineHeight: 1.65,
+                  wordBreak: "keep-all",
+                  overflowWrap: "break-word",
+                }}
+              >
+                {line}
+              </Text>
+            </Group>
+          ))}
+        </Stack>
+      </Stack>
+    </Card>
+  );
+}
+
 export default function FriendFindPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<FriendTab>("recommendations");
+  const activeTab = getFriendTabFromSearchParams(searchParams);
+
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<MatchingRequest[]>(
     [],
@@ -194,6 +308,11 @@ export default function FriendFindPage() {
     };
   }, []);
 
+  const handleChangeTab = (value: string) => {
+    const nextTab = value as FriendTab;
+    setSearchParams({ tab: nextTab });
+  };
+
   const handleChangeRequestMessage = (usernum: number, message: string) => {
     setRequestMessages((prev) => ({
       ...prev,
@@ -246,6 +365,7 @@ export default function FriendFindPage() {
         }
       } else {
         alert("매칭 완료! 채팅 탭에서 대화를 시작해보세요.");
+        setSearchParams({ tab: "chats" });
       }
     } catch (error) {
       console.error(error);
@@ -288,18 +408,29 @@ export default function FriendFindPage() {
         >
           <Stack gap="md" h="100%" style={{ minHeight: 0, overflow: "hidden" }}>
             <Box style={{ flexShrink: 0 }}>
-              <Stack gap={4}>
-                <Group gap="sm">
-                  <IconUserHeart size={30} color={coralScale[5]} />
+              <Group gap="md" align="center" wrap="nowrap">
+                <Image
+                  src={friendFindIcon}
+                  alt="ON.AI 친구찾기 아이콘"
+                  fit="contain"
+                  style={{
+                    width: 76,
+                    height: 76,
+                    objectFit: "contain",
+                    flexShrink: 0,
+                  }}
+                />
+
+                <Stack gap={4} style={{ minWidth: 0 }}>
                   <Title order={2} c={text.primary}>
                     친구찾기
                   </Title>
-                </Group>
 
-                <Text size="sm" c={text.secondary}>
-                  AI 추천을 보고 직접 친해져요 요청을 보내보세요.
-                </Text>
-              </Stack>
+                  <Text size="sm" c={text.secondary}>
+                    AI 추천을 보고 직접 친해져요 요청을 보내보세요.
+                  </Text>
+                </Stack>
+              </Group>
             </Box>
 
             <Box style={{ flexShrink: 0 }}>
@@ -308,7 +439,7 @@ export default function FriendFindPage() {
                 color="coral"
                 radius="xl"
                 value={activeTab}
-                onChange={(value) => setActiveTab(value as FriendTab)}
+                onChange={handleChangeTab}
                 data={[
                   { label: "추천 친구", value: "recommendations" },
                   { label: "받은 요청", value: "requests" },
@@ -364,23 +495,33 @@ export default function FriendFindPage() {
                           >
                             <Stack gap="md">
                               <Group justify="space-between" align="flex-start">
-                                <Stack gap={4}>
-                                  <Text fw={800} size="lg" c={text.primary}>
-                                    {item.user.nickname}
-                                  </Text>
+                                <Group gap="sm" align="center">
+                                  <UserProfileAvatar
+                                    profileImageUrl={
+                                      item.user.profile_image_url
+                                    }
+                                    nickname={item.user.nickname}
+                                    size={52}
+                                  />
 
-                                  <Group gap="xs">
-                                    <Badge color="coral" variant="light">
-                                      {item.user.region}
-                                    </Badge>
+                                  <Stack gap={4}>
+                                    <Text fw={800} size="lg" c={text.primary}>
+                                      {item.user.nickname}
+                                    </Text>
 
-                                    {item.user.parents_mbti && (
-                                      <Badge color="pink" variant="light">
-                                        {item.user.parents_mbti}
+                                    <Group gap="xs">
+                                      <Badge color="coral" variant="light">
+                                        {item.user.region}
                                       </Badge>
-                                    )}
-                                  </Group>
-                                </Stack>
+
+                                      {item.user.parents_mbti && (
+                                        <Badge color="pink" variant="light">
+                                          {item.user.parents_mbti}
+                                        </Badge>
+                                      )}
+                                    </Group>
+                                  </Stack>
+                                </Group>
 
                                 <Stack gap={3} align="flex-end">
                                   <Text fw={800} c={coralScale[6]}>
@@ -398,15 +539,7 @@ export default function FriendFindPage() {
 
                               <Divider color={border.default} />
 
-                              <Stack gap="xs">
-                                <Text size="sm" fw={700} c={text.primary}>
-                                  AI 추천 이유
-                                </Text>
-
-                                <Text size="sm" c={text.secondary}>
-                                  {item.ai_reason}
-                                </Text>
-                              </Stack>
+                              <AiReasonBox reason={item.ai_reason} />
 
                               <Group gap="xs" wrap="wrap">
                                 {item.common_interests.map((interest) => (
@@ -506,23 +639,33 @@ export default function FriendFindPage() {
                         >
                           <Stack gap="md">
                             <Group justify="space-between" align="flex-start">
-                              <Stack gap={4}>
-                                <Text fw={800} size="lg" c={text.primary}>
-                                  {request.requester.nickname}
-                                </Text>
+                              <Group gap="sm" align="center">
+                                <UserProfileAvatar
+                                  profileImageUrl={
+                                    request.requester.profile_image_url
+                                  }
+                                  nickname={request.requester.nickname}
+                                  size={52}
+                                />
 
-                                <Group gap="xs">
-                                  <Badge color="coral" variant="light">
-                                    {request.requester.region}
-                                  </Badge>
+                                <Stack gap={4}>
+                                  <Text fw={800} size="lg" c={text.primary}>
+                                    {request.requester.nickname}
+                                  </Text>
 
-                                  {request.requester.parents_mbti && (
-                                    <Badge color="pink" variant="light">
-                                      {request.requester.parents_mbti}
+                                  <Group gap="xs">
+                                    <Badge color="coral" variant="light">
+                                      {request.requester.region}
                                     </Badge>
-                                  )}
-                                </Group>
-                              </Stack>
+
+                                    {request.requester.parents_mbti && (
+                                      <Badge color="pink" variant="light">
+                                        {request.requester.parents_mbti}
+                                      </Badge>
+                                    )}
+                                  </Group>
+                                </Stack>
+                              </Group>
 
                               <Text size="xs" c={text.muted}>
                                 {formatDateTime(request.created_at)}
@@ -595,31 +738,41 @@ export default function FriendFindPage() {
                             navigate(`/friends/chat/${room.room_id}`)
                           }
                         >
-                          <Group justify="space-between">
-                            <Stack gap={4}>
-                              <Text fw={800} c={text.primary}>
-                                {room.other_user.nickname}
-                              </Text>
+                          <Group justify="space-between" align="center">
+                            <Group gap="sm" align="center">
+                              <UserProfileAvatar
+                                profileImageUrl={
+                                  room.other_user.profile_image_url
+                                }
+                                nickname={room.other_user.nickname}
+                                size={52}
+                              />
 
-                              <Group gap="xs">
-                                <Badge color="coral" variant="light">
-                                  {room.other_user.region}
-                                </Badge>
+                              <Stack gap={4}>
+                                <Text fw={800} c={text.primary}>
+                                  {room.other_user.nickname}
+                                </Text>
 
-                                {room.other_user.parents_mbti && (
-                                  <Badge color="pink" variant="light">
-                                    {room.other_user.parents_mbti}
+                                <Group gap="xs">
+                                  <Badge color="coral" variant="light">
+                                    {room.other_user.region}
                                   </Badge>
-                                )}
-                              </Group>
 
-                              <Text size="xs" c={text.muted}>
-                                마지막 대화{" "}
-                                {room.last_message_at
-                                  ? formatDateTime(room.last_message_at)
-                                  : "아직 메시지가 없습니다."}
-                              </Text>
-                            </Stack>
+                                  {room.other_user.parents_mbti && (
+                                    <Badge color="pink" variant="light">
+                                      {room.other_user.parents_mbti}
+                                    </Badge>
+                                  )}
+                                </Group>
+
+                                <Text size="xs" c={text.muted}>
+                                  마지막 대화{" "}
+                                  {room.last_message_at
+                                    ? formatDateTime(room.last_message_at)
+                                    : "아직 메시지가 없습니다."}
+                                </Text>
+                              </Stack>
+                            </Group>
 
                             <Button
                               radius="xl"

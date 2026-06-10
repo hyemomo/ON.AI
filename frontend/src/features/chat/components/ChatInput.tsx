@@ -27,7 +27,9 @@ const ChatInput = ({
   // 한글 IME 문제 대응: 버튼 클릭 시 DOM 실제 값을 직접 전달
   const handleSubmitWithIME = () => {
     const domValue = (textareaRef.current?.value ?? inputValue).trim();
+
     if (!domValue) return;
+
     handleSubmit(domValue);
   };
 
@@ -40,27 +42,47 @@ const ChatInput = ({
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm;codecs=opus",
+      });
+
       chunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
       };
 
       mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm;codecs=opus" });
+        stream.getTracks().forEach((track) => track.stop());
+
+        const blob = new Blob(chunksRef.current, {
+          type: "audio/webm;codecs=opus",
+        });
 
         const formData = new FormData();
         formData.append("audio", blob, "recording.webm");
 
         try {
-          const res = await fetch(`${BASE_URL}/stt`, { method: "POST", body: formData });
-          const data = await res.json();
-          if (data.transcript) {
-            setInputValue(inputValue ? `${inputValue} ${data.transcript}` : data.transcript);
+          const response = await fetch(`${BASE_URL}/stt`, {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("음성 인식 요청에 실패했습니다.");
           }
-        } catch {
+
+          const data = await response.json();
+
+          if (data.transcript) {
+            setInputValue(
+              inputValue ? `${inputValue} ${data.transcript}` : data.transcript,
+            );
+          }
+        } catch (error) {
+          console.error("STT 오류:", error);
           alert("음성 인식에 실패했습니다. 다시 시도해 주세요.");
         }
       };
@@ -68,7 +90,8 @@ const ChatInput = ({
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setIsRecording(true);
-    } catch {
+    } catch (error) {
+      console.error("마이크 접근 오류:", error);
       alert("마이크 접근 권한이 필요합니다.");
     }
   }, [isRecording, inputValue, setInputValue]);
@@ -95,8 +118,8 @@ const ChatInput = ({
             isRecording
               ? "듣고 있어요... 말씀해 주세요"
               : isLoading
-              ? "답변을 기다리는 중..."
-              : placeholder ?? "메시지를 입력하세요..."
+                ? "답변을 기다리는 중..."
+                : (placeholder ?? "메시지를 입력하세요...")
           }
           autosize
           minRows={1}
@@ -118,14 +141,19 @@ const ChatInput = ({
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
-              if (!isLoading) handleSubmit();
+
+              if (!isLoading) {
+                handleSubmit();
+              }
             }
           }}
           styles={{
             input: {
               minHeight: 46,
               borderRadius: 26,
-              border: isRecording ? "1.5px solid #E84D5C" : "1.5px solid #FFE4E7",
+              border: isRecording
+                ? "1.5px solid #E84D5C"
+                : "1.5px solid #FFE4E7",
               backgroundColor: isLoading ? "#FFF8F9" : "#FFF0F2",
               color: "#2D1A1E",
               fontSize: 14.5,

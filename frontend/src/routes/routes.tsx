@@ -14,6 +14,7 @@ import Test from "@/pages/Test";
 
 import ChildInfoStep from "@/features/onboarding/components/ChildInfoStep";
 import InterestStep from "@/features/onboarding/components/InterestStep";
+import ProfileImageStep from "@/features/onboarding/components/ProfileImageStep";
 
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import PublicOnlyRoute from "@/routes/PublicOnlyRoute";
@@ -42,6 +43,18 @@ export const router = createBrowserRouter([
         <LoginPage />
       </PublicOnlyRoute>
     ),
+  },
+  {
+    path: "/onboarding/children",
+    element: <ChildInfoStep />,
+  },
+  {
+    path: "/onboarding/interests",
+    element: <InterestStep />,
+  },
+  {
+    path: "/onboarding/profile-image",
+    element: <ProfileImageStep />,
   },
   {
     path: "/chat",
@@ -104,22 +117,6 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <MyPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/onboarding/children",
-    element: (
-      <ProtectedRoute>
-        <ChildInfoStep />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/onboarding/interests",
-    element: (
-      <ProtectedRoute>
-        <InterestStep />
       </ProtectedRoute>
     ),
   },

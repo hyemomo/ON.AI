@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   ActionIcon,
-  Avatar,
   Box,
   Button,
   Group,
@@ -11,7 +10,8 @@ import {
 } from "@mantine/core";
 import { IconEdit, IconTrash } from "@tabler/icons-react";
 import type { Comment } from "@/features/community/post-detail/types/types";
-import { formatDateTime, toStaticUrl } from "@/lib/api";
+import { formatDateTime } from "@/lib/api";
+import UserProfileAvatar from "@/components/UserProfileAvatar";
 import { border, coralScale, surface, text } from "@/tokens/color";
 
 type CommentItemProps = {
@@ -32,7 +32,6 @@ export default function CommentItem({
   const [loading, setLoading] = useState(false);
 
   const isOwner = currentUsernum === comment.c_user;
-  const profileImageSrc = toStaticUrl(comment.profile_image_url);
 
   const handleUpdate = async () => {
     if (!editContent.trim()) return;
@@ -67,18 +66,11 @@ export default function CommentItem({
   return (
     <Box>
       <Group align="flex-start" gap="sm" pl={0}>
-        <Avatar
-          src={profileImageSrc}
+        <UserProfileAvatar
+          profileImageUrl={comment.profile_image_url}
+          nickname={comment.nickname}
           size={38}
-          radius="xl"
-          color="coral"
-          style={{
-            border: `1.5px solid ${border.default}`,
-            flexShrink: 0,
-          }}
-        >
-          {comment.nickname?.[0] ?? "?"}
-        </Avatar>
+        />
 
         <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
           <Group gap={8} justify="space-between">

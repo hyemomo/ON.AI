@@ -38,7 +38,11 @@ const markdownComponents: Components = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      style={{ color: "#E84D5C", textDecoration: "underline", wordBreak: "break-all" }}
+      style={{
+        color: "#E84D5C",
+        textDecoration: "underline",
+        wordBreak: "break-all",
+      }}
     >
       {children}
     </a>
@@ -57,13 +61,19 @@ const markdownComponents: Components = {
     </code>
   ),
   h1: ({ children }) => (
-    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>{children}</h3>
+    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>
+      {children}
+    </h3>
   ),
   h2: ({ children }) => (
-    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>{children}</h3>
+    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>
+      {children}
+    </h3>
   ),
   h3: ({ children }) => (
-    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>{children}</h3>
+    <h3 style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 700 }}>
+      {children}
+    </h3>
   ),
 };
 
@@ -88,6 +98,7 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
             >
               {message.category}
             </Badge>
+
             {message.is_fallback && (
               <Badge size="xs" variant="outline" color="orange">
                 일반 정보
@@ -121,7 +132,10 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
             <span style={{ whiteSpace: "pre-line" }}>{message.content}</span>
           ) : (
             <div style={{ fontSize: 14.5 }}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
                 {message.content}
               </ReactMarkdown>
             </div>
@@ -135,4 +149,5 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
     </Group>
   );
 };
+
 export default MessageBubble;

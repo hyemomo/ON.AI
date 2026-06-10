@@ -41,6 +41,7 @@ crawler/data/chroma/*
 
 # Environment variables
 backend/.env
+backend/keys/
 
 # RAG 평가 스크립트 및 결과 (로컬 전용)
 backend/evaluate_rag.py

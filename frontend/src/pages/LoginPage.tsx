@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   Container,
+  Image,
   PasswordInput,
   Stack,
   Text,
@@ -11,6 +12,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
+import onaiLoginCharacter from "@/assets/images/onai-login-character.png";
 import { apiFetch } from "@/lib/api";
 import { saveAccessToken } from "@/lib/auth";
 import { coralScale, gradient, shadow, surface, text } from "@/tokens/color";
@@ -81,7 +83,7 @@ export default function LoginPage() {
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(150deg, #fff5f6 0%, #ffe8ec 45%, #ffd6dd 100%)",
+          "radial-gradient(circle at 50% 18%, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.22) 34%, rgba(255,255,255,0) 58%), linear-gradient(150deg, #fff5f6 0%, #ffe8ec 45%, #ffd6dd 100%)",
         display: "flex",
         alignItems: "center",
         padding: "48px 16px",
@@ -91,10 +93,18 @@ export default function LoginPage() {
         <Card p="xl" radius="xl" shadow="md" withBorder bg={surface.white}>
           <form onSubmit={handleSubmit}>
             <Stack gap="lg">
-              <Stack gap={4} align="center">
-                <Text size="44px" lh={1}>
-                  🤱
-                </Text>
+              <Stack gap={6} align="center">
+                <Image
+                  src={onaiLoginCharacter}
+                  alt="ON.AI 로그인 캐릭터"
+                  fit="contain"
+                  style={{
+                    width: 124,
+                    height: 112,
+                    objectFit: "contain",
+                    marginBottom: 0,
+                  }}
+                />
 
                 <Title order={2} ta="center" c={text.primary}>
                   ON<span style={{ color: coralScale[5] }}>.</span>AI 로그인

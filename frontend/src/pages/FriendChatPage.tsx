@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Avatar,
   Box,
   Button,
   Card,
@@ -15,6 +14,7 @@ import {
 import { IconArrowLeft, IconSend } from "@tabler/icons-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import UserProfileAvatar from "@/components/UserProfileAvatar";
 import { apiFetch } from "@/lib/api";
 import type { MyPageUser } from "@/features/community/post-detail/types/types";
 import { border, coralScale, gradient, surface, text } from "@/tokens/color";
@@ -24,6 +24,7 @@ type MatchingUser = {
   nickname: string;
   parents_mbti: string | null;
   region: string;
+  profile_image_url?: string | null;
 };
 
 type ChatMessage = {
@@ -39,6 +40,20 @@ type ChatMessageListResponse = {
   message: string;
   total: number;
   messages: ChatMessage[];
+};
+
+type ChatRoom = {
+  room_id: number;
+  match_id: number;
+  other_user: MatchingUser;
+  created_at: string;
+  last_message_at: string | null;
+};
+
+type ChatRoomListResponse = {
+  message: string;
+  total: number;
+  rooms: ChatRoom[];
 };
 
 function getDateLabel(value: string) {
@@ -100,6 +115,7 @@ export default function FriendChatPage() {
   const viewport = useRef<HTMLDivElement>(null);
 
   const [currentUser, setCurrentUser] = useState<MyPageUser | null>(null);
+  const [otherUser, setOtherUser] = useState<MatchingUser | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -112,14 +128,20 @@ export default function FriendChatPage() {
 
     const loadInitialData = async () => {
       try {
-        const [me, messageData] = await Promise.all([
+        const [me, roomData, messageData] = await Promise.all([
           apiFetch<MyPageUser>("/mypage/me"),
+          apiFetch<ChatRoomListResponse>("/chats/rooms"),
           apiFetch<ChatMessageListResponse>(`/chats/rooms/${roomId}/messages`),
         ]);
 
         if (!isMounted) return;
 
+        const currentRoom = (roomData.rooms ?? []).find(
+          (room) => String(room.room_id) === String(roomId),
+        );
+
         setCurrentUser(me);
+        setOtherUser(currentRoom?.other_user ?? null);
         setMessages(messageData.messages ?? []);
       } catch (error) {
         console.error(error);
@@ -127,7 +149,7 @@ export default function FriendChatPage() {
         if (!isMounted) return;
 
         alert("채팅방 정보를 불러오지 못했습니다.");
-        navigate("/friends");
+        navigate("/friends?tab=chats", { replace: true });
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -183,10 +205,6 @@ export default function FriendChatPage() {
     }
   };
 
-  const otherUser = messages.find(
-    (message) => message.sender.usernum !== currentUser?.usernum,
-  )?.sender;
-
   return (
     <AppLayout>
       <Box
@@ -211,11 +229,11 @@ export default function FriendChatPage() {
               variant="subtle"
               color="coral"
               leftSection={<IconArrowLeft size={16} />}
-              onClick={() => navigate("/friends")}
+              onClick={() => navigate("/friends?tab=chats", { replace: true })}
               w="fit-content"
               style={{ flexShrink: 0 }}
             >
-              친구찾기로 돌아가기
+              채팅 목록
             </Button>
 
             <Card
@@ -241,22 +259,28 @@ export default function FriendChatPage() {
                 }}
               >
                 <Group justify="space-between">
-                  <Group gap="sm">
-                    <Avatar radius="xl" color="coral">
-                      {otherUser?.nickname?.[0] ?? "?"}
-                    </Avatar>
+                  <Group gap="sm" align="center">
+                    <UserProfileAvatar
+                      profileImageUrl={otherUser?.profile_image_url}
+                      nickname={otherUser?.nickname}
+                      size={44}
+                    />
 
                     <Stack gap={0}>
                       <Text fw={800} size="md" c={text.primary}>
-                        {otherUser?.nickname ?? "1:1 채팅"}
+                        {otherUser?.nickname ?? "대화 상대"}
                       </Text>
 
-                      {otherUser && (
+                      {otherUser ? (
                         <Text size="xs" c={text.muted}>
                           {otherUser.region}
                           {otherUser.parents_mbti
                             ? ` · ${otherUser.parents_mbti}`
                             : ""}
+                        </Text>
+                      ) : (
+                        <Text size="xs" c={text.muted}>
+                          상대방 정보를 불러오는 중입니다.
                         </Text>
                       )}
                     </Stack>
@@ -351,18 +375,24 @@ export default function FriendChatPage() {
                             gap={6}
                           >
                             {!isMine && (
-                              <Avatar
-                                size={32}
-                                radius="xl"
-                                color="coral"
+                              <Box
                                 style={{
                                   visibility: shouldShowName
                                     ? "visible"
                                     : "hidden",
+                                  width: 32,
+                                  height: 32,
+                                  flexShrink: 0,
                                 }}
                               >
-                                {message.sender.nickname?.[0] ?? "?"}
-                              </Avatar>
+                                <UserProfileAvatar
+                                  profileImageUrl={
+                                    message.sender.profile_image_url
+                                  }
+                                  nickname={message.sender.nickname}
+                                  size={32}
+                                />
+                              </Box>
                             )}
 
                             {isMine && isLastInSenderGroup && (
@@ -424,6 +454,7 @@ export default function FriendChatPage() {
                       <Text size="lg" fw={800} c={text.primary}>
                         아직 메시지가 없습니다.
                       </Text>
+
                       <Text size="sm" c={text.muted} ta="center">
                         첫 인사를 보내 대화를 시작해보세요.
                       </Text>
@@ -442,7 +473,11 @@ export default function FriendChatPage() {
               >
                 <Group gap="sm" align="flex-end">
                   <TextInput
-                    placeholder="메시지를 입력하세요"
+                    placeholder={
+                      otherUser?.nickname
+                        ? `${otherUser.nickname}님에게 메시지 보내기`
+                        : "메시지를 입력하세요"
+                    }
                     value={content}
                     onChange={(e) => setContent(e.currentTarget.value)}
                     onKeyDown={(e) => {

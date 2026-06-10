@@ -1,7 +1,8 @@
-import { ActionIcon, Avatar, Badge, Box, Group, Stack, Text } from "@mantine/core";
-import { IconChevronLeft, IconMessageCircleHeart } from "@tabler/icons-react";
+import { ActionIcon, Badge, Box, Group, Stack, Text } from "@mantine/core";
+import { IconChevronLeft } from "@tabler/icons-react";
 import { border, coralScale, surface, text } from "@/tokens/color";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
+import ChatAvatar from "@/features/chat/components/chatAvatar";
 
 export default function ChatHeader() {
   const { handleBack } = useBackNavigation({ fallbackPath: "/community" });
@@ -28,16 +29,7 @@ export default function ChatHeader() {
             <IconChevronLeft size={19} color="#E84D5C" />
           </ActionIcon>
 
-          <Avatar
-            radius="xl"
-            color="coral"
-            size={44}
-            style={{
-              border: `1.5px solid ${border.default}`,
-            }}
-          >
-            <IconMessageCircleHeart size={24} />
-          </Avatar>
+          <ChatAvatar size={46} />
 
           <Stack gap={2}>
             <Group gap="xs">
