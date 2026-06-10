@@ -154,7 +154,7 @@ export const REGION_OPTIONS: Record<string, string[]> = {
     "예산군",
     "태안군",
   ],
-  전북: [
+  전라북도: [
     "전주시",
     "군산시",
     "익산시",

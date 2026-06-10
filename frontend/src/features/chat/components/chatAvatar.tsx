@@ -1,20 +1,36 @@
 import { Avatar } from "@mantine/core";
-import { IconUser } from "@tabler/icons-react";
+import onaiChatAvatar from "@/assets/images/onai-chat-avatar.png";
+import { border } from "@/tokens/color";
 
-const ChatAvatar = () => {
+type ChatAvatarProps = {
+  size?: number;
+};
+
+const ChatAvatar = ({ size = 34 }: ChatAvatarProps) => {
   return (
     <Avatar
-      size={32}
+      src={onaiChatAvatar}
+      alt="ON.AI 챗봇 캐릭터"
+      size={size}
       radius="xl"
       styles={{
         root: {
-          background: "linear-gradient(135deg, #FF8E9B, #E84D5C)",
-          boxShadow: "0 3px 10px rgba(255, 107, 122, 0.28)",
+          background: "#FFFFFF",
+          border: `1px solid ${border.default}`,
+          boxShadow: "0 3px 10px rgba(255, 107, 122, 0.12)",
+          overflow: "hidden",
+        },
+        image: {
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: "center",
+          transform: "translateY(3px) scale(1.1)",
+          transformOrigin: "center center",
         },
       }}
-    >
-      <IconUser size={17} color="white" />
-    </Avatar>
+    />
   );
 };
+
 export default ChatAvatar;

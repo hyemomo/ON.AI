@@ -5,6 +5,7 @@ import {
   Card,
   Container,
   Group,
+  Image,
   ScrollArea,
   SegmentedControl,
   Select,
@@ -15,6 +16,7 @@ import {
 import { IconMessageCircle, IconPencilPlus } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import communityIcon from "@/assets/images/onai-community-icon.png";
 import { apiFetch } from "@/lib/api";
 import {
   border,
@@ -170,21 +172,35 @@ export default function CommunityPage() {
             }}
           >
             <Stack
-              gap="md"
+              gap="sm"
               h="100%"
               style={{ minHeight: 0, overflow: "hidden" }}
             >
               <Box style={{ flexShrink: 0 }}>
                 <Group justify="space-between" align="center">
-                  <Stack gap={2}>
-                    <Text fw={800} size="xl" c={text.primary}>
-                      커뮤니티
-                    </Text>
+                  <Group gap="md" align="center" wrap="nowrap">
+                    <Image
+                      src={communityIcon}
+                      alt="ON.AI 커뮤니티 아이콘"
+                      fit="contain"
+                      style={{
+                        width: 76,
+                        height: 76,
+                        objectFit: "contain",
+                        flexShrink: 0,
+                      }}
+                    />
 
-                    <Text size="sm" c={text.secondary}>
-                      동네 부모님들과 육아 이야기를 나눠보세요.
-                    </Text>
-                  </Stack>
+                    <Stack gap={4} style={{ minWidth: 0 }}>
+                      <Text fw={800} size="xl" c={text.primary}>
+                        커뮤니티
+                      </Text>
+
+                      <Text size="sm" c={text.secondary}>
+                        동네 부모님들과 육아 이야기를 나눠보세요.
+                      </Text>
+                    </Stack>
+                  </Group>
 
                   <Button
                     onClick={() => navigate("/community/post/new")}
@@ -193,6 +209,7 @@ export default function CommunityPage() {
                     style={{
                       background: gradient.primary,
                       boxShadow: shadow.btn,
+                      flexShrink: 0,
                     }}
                   >
                     게시글 작성
@@ -200,9 +217,25 @@ export default function CommunityPage() {
                 </Group>
               </Box>
 
-              <Card p="md" withBorder style={{ flexShrink: 0 }}>
-                <Stack gap="md">
-                  <Group justify="space-between" align="center">
+              <Card
+                px="md"
+                py="sm"
+                withBorder
+                radius="lg"
+                style={{
+                  flexShrink: 0,
+                  background: surface.white,
+                  borderColor: border.default,
+                  boxShadow: shadow.card,
+                }}
+              >
+                <Stack gap={12}>
+                  <Group
+                    justify="space-between"
+                    align="center"
+                    gap="md"
+                    wrap="wrap"
+                  >
                     <SegmentedControl
                       color="coral"
                       radius="xl"
@@ -212,51 +245,76 @@ export default function CommunityPage() {
                         { label: "최신글", value: "latest" },
                         { label: "인기글", value: "popular" },
                       ]}
-                    />
-                  </Group>
-
-                  <Group gap="sm" align="flex-end">
-                    <Select
-                      label="시/도"
-                      placeholder="전체 지역"
-                      data={sidoData}
-                      value={selectedSido ?? "전체 지역"}
-                      onChange={(value) => {
-                        if (value === "전체 지역") {
-                          setSelectedSido(null);
-                          setSelectedSigungu(null);
-                          return;
-                        }
-
-                        if (value === "전국") {
-                          setSelectedSido("전국");
-                          setSelectedSigungu(null);
-                          return;
-                        }
-
-                        setSelectedSido(value);
-                        setSelectedSigungu(null);
+                      styles={{
+                        root: {
+                          height: 34,
+                        },
+                        label: {
+                          height: 28,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 13,
+                          fontWeight: 600,
+                        },
                       }}
-                      clearable={false}
-                      w={180}
                     />
 
-                    <Select
-                      label="시/군/구"
-                      placeholder="전체"
-                      data={sigunguData}
-                      value={selectedSigungu ?? "전체"}
-                      onChange={(value) => {
-                        setSelectedSigungu(value === "전체" ? null : value);
-                      }}
-                      disabled={
-                        !selectedSido ||
-                        selectedSido === "전국" ||
-                        (regionOptions[selectedSido] ?? []).length === 0
-                      }
-                      clearable={false}
-                      w={180}
-                    />
+                    <Group gap="xs" align="center" wrap="nowrap">
+                      <Select
+                        placeholder="시/도"
+                        data={sidoData}
+                        value={selectedSido ?? "전체 지역"}
+                        onChange={(value) => {
+                          if (value === "전체 지역") {
+                            setSelectedSido(null);
+                            setSelectedSigungu(null);
+                            return;
+                          }
+
+                          if (value === "전국") {
+                            setSelectedSido("전국");
+                            setSelectedSigungu(null);
+                            return;
+                          }
+
+                          setSelectedSido(value);
+                          setSelectedSigungu(null);
+                        }}
+                        clearable={false}
+                        w={142}
+                        size="xs"
+                        styles={{
+                          input: {
+                            minHeight: 34,
+                            height: 34,
+                          },
+                        }}
+                      />
+
+                      <Select
+                        placeholder="시/군/구"
+                        data={sigunguData}
+                        value={selectedSigungu ?? "전체"}
+                        onChange={(value) => {
+                          setSelectedSigungu(value === "전체" ? null : value);
+                        }}
+                        disabled={
+                          !selectedSido ||
+                          selectedSido === "전국" ||
+                          (regionOptions[selectedSido] ?? []).length === 0
+                        }
+                        clearable={false}
+                        w={142}
+                        size="xs"
+                        styles={{
+                          input: {
+                            minHeight: 34,
+                            height: 34,
+                          },
+                        }}
+                      />
+                    </Group>
                   </Group>
 
                   <Group gap="xs" wrap="wrap">
@@ -276,6 +334,7 @@ export default function CommunityPage() {
                             setActiveCategory(cat === "전체" ? null : cat)
                           }
                           style={{
+                            height: 28,
                             fontWeight: 500,
                             borderColor: isActive
                               ? coralScale[3]

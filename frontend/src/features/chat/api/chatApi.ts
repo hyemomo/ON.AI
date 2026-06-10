@@ -18,15 +18,18 @@ interface HistoryMessage {
 
 function buildHistory(messages: ChatMessage[]): HistoryMessage[] {
   // initial- ID 메시지(초기 AI 인사말) 제외
-  const filtered = messages.filter((m) => !m.id.startsWith("initial-"));
+  const filtered = messages.filter(
+    (message) => !message.id.startsWith("initial-"),
+  );
 
   // user 메시지부터 시작하도록 앞부분 자르기 (Gemini API 요구사항)
-  const startIdx = filtered.findIndex((m) => m.role === "user");
-  if (startIdx === -1) return [];
+  const startIndex = filtered.findIndex((message) => message.role === "user");
 
-  return filtered.slice(startIdx).map((m) => ({
-    role: m.role === "ai" ? "model" : "user",
-    content: m.content,
+  if (startIndex === -1) return [];
+
+  return filtered.slice(startIndex).map((message) => ({
+    role: message.role === "ai" ? "model" : "user",
+    content: message.content,
   }));
 }
 
@@ -35,9 +38,9 @@ export async function sendChatMessage(
   history: ChatMessage[],
   mode: string = "",
   policyCategory: string = "",
-  userContext: string = ""
+  userContext: string = "",
 ): Promise<ChatApiResponse> {
-  const res = await fetch(`${BASE_URL}/chat`, {
+  const response = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -49,9 +52,11 @@ export async function sendChatMessage(
     }),
   });
 
-  if (!res.ok) {
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("챗봇 API 오류:", response.status, errorText);
     throw new Error("서버 오류가 발생했습니다.");
   }
 
-  return res.json();
+  return response.json();
 }

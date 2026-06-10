@@ -57,6 +57,8 @@ export default function PostDetailPage() {
 
     const loadPostDetail = async () => {
       try {
+        setLoading(true);
+
         const [userData, postData, commentData] = await Promise.all([
           apiFetch<MyPageUser>("/mypage/me"),
           apiFetch<PostDetailResponse>(`/community/posts/${postnum}`),
@@ -69,7 +71,7 @@ export default function PostDetailPage() {
         setPost(postData.post);
         setComments(commentData.comments ?? []);
       } catch (error) {
-        console.error(error);
+        console.error("게시글 상세 조회 실패:", error);
 
         if (!isMounted) return;
 
@@ -111,20 +113,31 @@ export default function PostDetailPage() {
       alert("게시글이 삭제되었습니다.");
       navigate("/community");
     } catch (error) {
-      console.error(error);
+      console.error("게시글 삭제 실패:", error);
       alert("게시글 삭제에 실패했습니다.");
     }
   };
 
   const handleSubmitComment = async () => {
     if (!postnum) return;
-    if (!commentText.trim()) return;
+
+    const trimmedComment = commentText.trim();
+
+    if (!trimmedComment) {
+      alert("댓글 내용을 입력해주세요.");
+      return;
+    }
+
+    if (trimmedComment.length > 500) {
+      alert("댓글은 500자 이하로 입력해주세요.");
+      return;
+    }
 
     try {
       await apiFetch("/community/comments/", {
         method: "POST",
         json: {
-          c_content: commentText.trim(),
+          c_content: trimmedComment,
           c_post: Number(postnum),
         },
       });
@@ -136,33 +149,43 @@ export default function PostDetailPage() {
         prev
           ? {
               ...prev,
-              comment_count: prev.comment_count + 1,
+              comment_count: (prev.comment_count ?? 0) + 1,
             }
           : prev,
       );
     } catch (error) {
-      console.error(error);
+      console.error("댓글 등록 실패:", error);
       alert("댓글 등록에 실패했습니다.");
     }
   };
 
   const handleUpdateComment = async (commentnum: number, content: string) => {
+    const trimmedContent = content.trim();
+
+    if (!trimmedContent) {
+      alert("댓글 내용을 입력해주세요.");
+      return;
+    }
+
     try {
       await apiFetch(`/community/comments/${commentnum}`, {
         method: "PUT",
         json: {
-          c_content: content,
+          c_content: trimmedContent,
         },
       });
 
       await fetchComments();
     } catch (error) {
-      console.error(error);
+      console.error("댓글 수정 실패:", error);
       alert("댓글 수정에 실패했습니다.");
     }
   };
 
   const handleDeleteComment = async (commentnum: number) => {
+    const ok = window.confirm("댓글을 삭제하시겠습니까?");
+    if (!ok) return;
+
     try {
       await apiFetch(`/community/comments/${commentnum}`, {
         method: "DELETE",
@@ -174,12 +197,12 @@ export default function PostDetailPage() {
         prev
           ? {
               ...prev,
-              comment_count: Math.max(prev.comment_count - 1, 0),
+              comment_count: Math.max((prev.comment_count ?? 0) - 1, 0),
             }
           : prev,
       );
     } catch (error) {
-      console.error(error);
+      console.error("댓글 삭제 실패:", error);
       alert("댓글 삭제에 실패했습니다.");
     }
   };
@@ -209,6 +232,16 @@ export default function PostDetailPage() {
               <Text ta="center" c={text.muted}>
                 게시글을 찾을 수 없습니다.
               </Text>
+
+              <Button
+                mt="md"
+                variant="light"
+                color="coral"
+                radius="xl"
+                onClick={() => navigate("/community")}
+              >
+                커뮤니티로 돌아가기
+              </Button>
             </Card>
           </Container>
         </Box>
@@ -235,10 +268,20 @@ export default function PostDetailPage() {
               post={post}
               commentCount={comments.length}
               currentUsernum={currentUser?.usernum}
+              isDetailPage={true}
               onDelete={handleDeletePost}
             />
 
-            <Card p="xl" radius="xl" withBorder>
+            <Card
+              p="xl"
+              radius="xl"
+              withBorder
+              style={{
+                background: surface.white,
+                borderColor: border.default,
+                boxShadow: shadow.card,
+              }}
+            >
               <Group justify="space-between" mb="lg">
                 <Text fw={700} size="md" c={text.primary}>
                   댓글{" "}
@@ -266,6 +309,7 @@ export default function PostDetailPage() {
                       size="sm"
                       minRows={3}
                       autosize
+                      maxLength={500}
                       value={commentText}
                       onChange={(e) => setCommentText(e.currentTarget.value)}
                       styles={{
