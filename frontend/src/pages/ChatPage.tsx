@@ -9,7 +9,6 @@ import {
   Text,
 } from "@mantine/core";
 
-import AppLayout from "@/components/AppLayout";
 import { apiFetch } from "@/lib/api";
 import type { ChatMessage, ChatMode } from "@/features/chat/types/chat.type";
 import { initialMessages } from "@/features/chat/mocks/chat.mock";
@@ -354,13 +353,12 @@ const ChatPage = () => {
       ?.label ?? "전체";
 
   return (
-    <AppLayout>
-      <Box
-        h="calc(100dvh - 150px)"
-        bg="#FFF8F8"
-        style={{
-          display: "flex",
-          flexDirection: "column",
+    <Box
+      h="100dvh"
+      bg="#FFF8F8"
+      style={{
+        display: "flex",
+        flexDirection: "column",
           overflow: "hidden",
         }}
       >
@@ -512,8 +510,7 @@ const ChatPage = () => {
           isLoading={isTyping}
           placeholder={!mode ? "모드를 선택하거나 바로 질문하세요..." : undefined}
         />
-      </Box>
-    </AppLayout>
+    </Box>
   );
 };
 
