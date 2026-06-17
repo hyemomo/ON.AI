@@ -148,9 +148,7 @@ export default function CommunityPage() {
     <AppLayout>
       <Box
         style={{
-          height: "calc(100vh - 134px)",
           background: surface.bg,
-          overflow: "hidden",
         }}
       >
         <Container
@@ -160,7 +158,6 @@ export default function CommunityPage() {
           style={{
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden",
           }}
         >
           <SimpleGrid

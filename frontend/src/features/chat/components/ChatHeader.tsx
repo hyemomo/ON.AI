@@ -1,8 +1,12 @@
-import { Badge, Box, Group, Stack, Text } from "@mantine/core";
-import ChatAvatar from "@/features/chat/components/chatAvatar";
+import { ActionIcon, Badge, Box, Group, Stack, Text } from "@mantine/core";
+import { IconChevronLeft } from "@tabler/icons-react";
 import { border, coralScale, surface, text } from "@/tokens/color";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
+import ChatAvatar from "@/features/chat/components/chatAvatar";
 
 export default function ChatHeader() {
+  const { handleBack } = useBackNavigation({ fallbackPath: "/community" });
+
   return (
     <Box
       px="lg"
@@ -14,6 +18,17 @@ export default function ChatHeader() {
     >
       <Group justify="space-between" align="center">
         <Group gap="sm">
+          <ActionIcon
+            variant="light"
+            radius="xl"
+            size={36}
+            color="pink"
+            onClick={handleBack}
+            styles={{ root: { border: "1.5px solid #FFE4E7", backgroundColor: "#FFF0F2" } }}
+          >
+            <IconChevronLeft size={19} color="#E84D5C" />
+          </ActionIcon>
+
           <ChatAvatar size={46} />
 
           <Stack gap={2}>
